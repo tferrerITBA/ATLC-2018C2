@@ -7,7 +7,8 @@
 	void yyerror(const char *s);
 %}
 
-%token IDENTIFIER MAIN_ID
+%token IDENTIFIER MAIN_ID ON DO
+%token OP_EQ OP_LT OP_GT OP_LE OP_GE OP_NE
 
 %start ProgramFunctionList
 
@@ -42,9 +43,22 @@ FunctionArguments
 		;
 
 FunctionBody
-		: 
+		: OnStatement
+		|
 		;
 
+OnStatement
+		: ON '(' Condition ')' DO '{' FunctionBody '}'
+		;
+
+Condition
+		: IDENTIFIER OP_EQ IDENTIFIER
+		| IDENTIFIER OP_LT IDENTIFIER
+		| IDENTIFIER OP_GT IDENTIFIER
+		| IDENTIFIER OP_LE IDENTIFIER
+		| IDENTIFIER OP_GE IDENTIFIER
+		| IDENTIFIER OP_NE IDENTIFIER
+		;
 %%
 
 int main(int argc, char *argv[])
