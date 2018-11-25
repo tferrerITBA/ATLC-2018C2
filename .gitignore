@@ -1,3 +1,11 @@
+# Lex & Yacc files
+lex.yy.c
+y.tab.h
+y.tab.c
+frozone
+Tests/*
+!Tests/.gitkeep
+
 # Prerequisites
 *.d
 
