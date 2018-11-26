@@ -7,9 +7,20 @@
 	void yyerror(const char *s);
 %}
 
-%token IDENTIFIER MAIN_ID ON DO
+%union {
+	int ival;
+	float fval;
+	int bval;
+	char * sval;
+}
+
+%token MAIN_ID ON DO
+%token <sval> IDENTIFIER
 %token OP_EQ OP_LT OP_GT OP_LE OP_GE OP_NE
-%token LITERAL
+%token <ival> INT_LIT
+%token <fval> FL_LIT
+%token <bval> BOOL_LIT
+%token <sval> STR_LIT
 
 %start ProgramFunctionList
 
@@ -44,18 +55,20 @@ FunctionArguments
 		;
 
 FunctionBody
-		: VarDeclarationList
-		| OnStatement
+		: FunctionBody Statement
 		|
 		;
 
-VarDeclarationList
-		: VarDeclarationList VarDeclaration
-		| VarDeclaration
+Statement
+		: VarDeclaration
+		| OnStatement
 		;
 
 VarDeclaration
-		: IDENTIFIER '=' LITERAL
+		: IDENTIFIER '=' INT_LIT			{ addVariable($1, IVAL, $3); }
+		| IDENTIFIER '=' FL_LIT				{ addVariable($1, FVAL, $3); }
+		| IDENTIFIER '=' STR_LIT			{ addVariable($1, SVAL, $3); }
+		| IDENTIFIER '=' BOOL_LIT			{ addVariable($1, BVAL, $3); }
 		| IDENTIFIER '=' '(' Condition ')'
 		;
 
@@ -93,4 +106,8 @@ int main(int argc, char *argv[])
 
     fclose(yyin);
     return 0;
+}
+
+void addVariable(char * id, int type, void * value) {
+	
 }
