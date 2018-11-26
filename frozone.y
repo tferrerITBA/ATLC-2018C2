@@ -9,6 +9,7 @@
 
 %token IDENTIFIER MAIN_ID ON DO
 %token OP_EQ OP_LT OP_GT OP_LE OP_GE OP_NE
+%token LITERAL
 
 %start ProgramFunctionList
 
@@ -43,8 +44,19 @@ FunctionArguments
 		;
 
 FunctionBody
-		: OnStatement
+		: VarDeclarationList
+		| OnStatement
 		|
+		;
+
+VarDeclarationList
+		: VarDeclarationList VarDeclaration
+		| VarDeclaration
+		;
+
+VarDeclaration
+		: IDENTIFIER '=' LITERAL
+		| IDENTIFIER '=' '(' Condition ')'
 		;
 
 OnStatement
