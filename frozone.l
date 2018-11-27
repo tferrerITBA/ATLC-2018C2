@@ -29,7 +29,7 @@ NEW_LINE    [\n]
 
 frozone         {
                     yylval.sval = strdup(yytext);
-                    if(insertFunction(yylval.sval) != SUCCESS) {
+                    if(insertFunction(yylval.sval, 0) != SUCCESS) {
                         fclose(fp);
                         remove("./test.c");
                         exit(1);                // SACAR ESTO
@@ -52,6 +52,10 @@ frozone         {
                     yylval.bval = FALSE;
                     return BOOL_LIT;
                 }
+"return"        {
+                    yylval.sval = strdup(yytext);
+                    return RETURN;
+                }
 
 {Double}         {   
                     yylval.dval = atof(yytext);
@@ -65,7 +69,7 @@ frozone         {
                 }
 {FunctionDec}   {
                     yylval.sval = strdup(yytext);
-                    if(insertFunction(yylval.sval) != SUCCESS) {
+                    if(foundFunction(yylval.sval) != SUCCESS) {
                         fclose(fp);
                         remove("./test.c");
                         exit(1);                // SACAR ESTO

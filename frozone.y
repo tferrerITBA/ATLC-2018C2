@@ -27,7 +27,7 @@
 %union {
 	int ival;
 	double dval;
-	int bval;
+	bool bval;
 	char * sval;
 	Node node;
 }
@@ -41,16 +41,40 @@
 %token <dval> DBL_LIT
 %token <bval> BOOL_LIT
 %token <sval> STR_LIT
+%token <sval> RETURN
 
-%type<node> Program GlobalFunctionList MainFunction FunctionList Function FunctionArguments FunctionBody Statement VarDeclaration OnStatement
+%type<node> Program HeaderSection FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionArguments FunctionBody Statement VarDeclaration FunctionCall OnStatement ReturnStatement IdentifierList
 
 %start Program
 
 %%
 
 Program
-		: GlobalFunctionList
-				{ $$ = addNode(strcatN(3, "typedef enum { FALSE = 0, TRUE } bool;\n", "typedef struct VarCDT {\n\tchar * str;\n\tint i;\n\tdouble d;\n}\n\n", $1->str)); fprintf(fp, "%s", $$->str); } // METER EN EL .H
+		: HeaderSection GlobalFunctionList
+				{ $$ = addNode(strcatN(3, "typedef enum { FALSE = 0, TRUE } bool;\n", "typedef struct VarCDT {\n\tchar * str;\n\tint i;\n\tdouble d;\nbool b;\n}\ntypedef struct VarCDT * Var;\n\n", $1->str)); fprintf(fp, "%s", $$->str); } // METER EN EL .H
+		;
+
+HeaderSection
+		: FunctionPrototypes
+				{
+					$$ = addNode(strcatN(1, $1->str));
+				}
+		;
+
+FunctionPrototypes
+		: FunctionPrototypes FunctionPrototype
+				{
+					$$ = addNode(strcatN(2, $1->str, $2->str));
+				}
+		|		{ $$ = addNode(""); }
+		;
+
+FunctionPrototype
+		: IDENTIFIER '(' INT_LIT ')'
+				{
+					insertFunction($1, $3);
+					//$$ = addNode(strcatN(5, "Var ", $1, "(", $3->str, ");\n"));
+				}
 		;
 
 GlobalFunctionList
@@ -65,9 +89,9 @@ GlobalFunctionList
 		;
 
 MainFunction
-		: MAIN_ID '(' ')' '{' FunctionBody '}'
+		: MAIN_ID '(' ')' '{' FunctionBody ReturnStatement '}'
 				{
-					$$ = addNode(strcatN(3, "int main() {\n", $5->str, "}\n\n"));
+					$$ = addNode(strcatN(4, "int main() {\n", $5->str, $6->str, "}\n\n"));
 				}
 		;
 
@@ -79,9 +103,9 @@ FunctionList
 		;
 
 Function
-		: FN_ID '(' FunctionArguments ')' '{' FunctionBody '}'
+		: FN_ID '(' FunctionArguments ')' '{' FunctionBody ReturnStatement '}'
 				{
-					$$ = addNode(strcatN(6, getFunctionName($1), "(", $3->str, ") {\n", $6->str, "}\n\n"));
+					$$ = addNode(strcatN(8, "Var ", getFunctionName($1), "(", $3->str, ") {\n", $6->str, $7->str, "}\n\n"));
 				}
 		;
 
@@ -102,52 +126,96 @@ Statement
 				{ $$ = addNode(strcatN(1, $1->str)); }
 		| OnStatement
 				{ $$ = addNode(strcatN(1, $1->str)); }
+		| ReturnStatement
+				{ $$ = addNode(strcatN(1, $1->str)); }
 		;
 
 VarDeclaration
 		: IDENTIFIER '=' INT_LIT
 				{
 					char int_str[MAX_INT_STR_LENGTH];
-					sprintf(int_str, "%d", $3);
+          			sprintf(int_str, "%d", $3);
 					if(addVariable($1, IVAL) == VAR_CREATED) {
-						$$ = addNode(strcatN(7, "VarCDT ", $1,";\n", $1, ".i = ", int_str, ";\n"));
+						$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithInt(", $1, ", ", int_str, ");\n"));
 					} else {
-						$$ = addNode(strcatN(4, $1, ".i = ", int_str, ";\n"));
+						$$ = addNode(strcatN(5, "varWithInt(", $1, ", ", int_str, ");\n"));
 					}
 				}
 		| IDENTIFIER '=' DBL_LIT
 				{
 					char double_str[MAX_DBL_STR_LENGTH];
-					sprintf(double_str, "%g", $3);
+          			sprintf(double_str, "%g", $3);
 					if(addVariable($1, DVAL) == VAR_CREATED) {
-						$$ = addNode(strcatN(7, "VarCDT ", $1,";\n", $1, ".d = ", double_str, ";\n"));
+						$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithDbl(", $1, ", ", double_str, ");\n"));
 					} else {
-						$$ = addNode(strcatN(4, $1, ".d = ", double_str, ";\n"));
+						$$ = addNode(strcatN(5, "varWithDbl(", $1, ", ", double_str, ");\n"));
 					}
 				}
 		| IDENTIFIER '=' STR_LIT
 				{
 					if(addVariable($1, SVAL) == VAR_CREATED) {
-						$$ = addNode(strcatN(7, "VarCDT ", $1,";\n", $1, ".str = ", $3, ";\n"));
+						$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithStr(", $1, ", ", $3, ");\n"));
 					} else {
-						$$ = addNode(strcatN(4, $1, ".str = ", $3, ";\n"));
+						$$ = addNode(strcatN(5, "varWithStr(", $1, ", ", $3, ");\n"));
 					}
 				}
 		| IDENTIFIER '=' BOOL_LIT
 				{
 					if(addVariable($1, BVAL) == VAR_CREATED) {
-						$$ = addNode(strcatN(7, "VarCDT ", $1,";\n", $1, ".b = ", ($3 == TRUE)? "TRUE" : "FALSE", ";\n"));
+						$$ = addNode(strcatN(7, "Var ", $1, " = malloc(sizeof(VarCDT));\nvarWithBool(", $1, ", ", ($3 == TRUE)? "TRUE" : "FALSE", ");\n"));
 					} else {
-						$$ = addNode(strcatN(4, $1, ".b = ", ($3 == TRUE)? "TRUE" : "FALSE", ";\n"));
+						$$ = addNode(strcatN(5, "varWithBool(", $1, ", ", ($3 == TRUE)? "TRUE" : "FALSE", ");\n"));
 					}
+				}
+		| IDENTIFIER '=' FunctionCall
+				{
+					$$ = addNode(strcatN(1, $1, " = ", $3->str));
 				}
 		//| IDENTIFIER '=' '(' Condition ')'
 		//		{ $$ = addNode()}
 		;
 
+FunctionCall
+		: IDENTIFIER '(' IdentifierList ')'
+				{
+					////////////////////////////////////////////////////////
+				}
+		;
+
 OnStatement
 		: ON '(' Condition ')' DO '{' FunctionBody '}'
 				{ $$ = addNode(strcatN(4, "if(", /*$3->str,*/ ") {\n", $7->str, "}\n")); }
+		;
+
+ReturnStatement
+		: RETURN IDENTIFIER
+			{
+				if(!foundVariable($2)) {
+					yyerror("Returned non-existent variable in function");
+					return NOT_FOUND;
+				}
+				$$ = addNode(strcatN(3, "return ", $2, ";\n"));
+			}
+		| RETURN INT_LIT
+			{
+				char int_str[MAX_INT_STR_LENGTH];
+          		sprintf(int_str, "%d", $2);
+				$$ = addNode(strcatN(5, "return newVarWithInt(", $1, ", ", int_str, ");\n"));
+			}
+		| RETURN DBL_LIT
+			{
+				char double_str[MAX_DBL_STR_LENGTH];
+          		sprintf(double_str, "%g", $2);
+				$$ = addNode(strcatN(5, "return newVarWithDbl(", $1, ", ", double_str, ");\n"));
+			}
+		| RETURN STR_LIT
+			{
+				$$ = addNode(strcatN(5, "return newVarWithStr(", $1, ", ", $2, ");\n"));
+			}
+		| RETURN BOOL_LIT
+			{
+				$$ = addNode(strcatN(5, "return newVarWithBool(", $1, ", ", ($2 == TRUE)? "TRUE" : "FALSE", ");\n"));
+			}
 		;
 
 Condition
@@ -157,6 +225,11 @@ Condition
 		| IDENTIFIER OP_LE IDENTIFIER
 		| IDENTIFIER OP_GE IDENTIFIER
 		| IDENTIFIER OP_NE IDENTIFIER
+		;
+
+IdentifierList
+		:
+			{ $$ = addNode(strcatN(1, "")); }
 		;
 %%
 
@@ -208,6 +281,17 @@ varStatus addVariable(char * varName, int type) {
 		func->varLocal[func->variableIndex++]->type = type;
 	}
 	return VAR_CREATED;
+}
+
+bool foundVariable(char * varName) {
+	Function func = gscope->functions[gscope->currentFunction];
+	int i;
+	for(i = 0; i < func->variableIndex; i++) {
+		if(strcmp(varName, func->varLocal[i]->name) == 0) {
+			return TRUE;
+		}
+	}
+	return FALSE;
 }
 
 Node addNode(char * string) {
