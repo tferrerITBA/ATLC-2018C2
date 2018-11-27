@@ -9,6 +9,8 @@
 	#define TRUE 1
     #define FALSE 0
 	
+	#define STR_BLOCK 10
+	
 	extern FILE *yyin;
 	FILE * fp;
 
