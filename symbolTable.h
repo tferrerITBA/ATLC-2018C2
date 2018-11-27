@@ -21,12 +21,15 @@ typedef struct FunctionCDT * Function;
 
 typedef struct FunctionCDT {
   	char * name;
+  	int index;
   	Variable varLocal[MAX_LOCAL_VARIABLES];
 } FunctionCDT;
 
 typedef struct GlobalCDT * Global;
 
 typedef struct GlobalCDT {
+	int variableIndex;
 	Variable varGlobal[MAX_GLOBAL_VARIABLES];
+	int functionIndex;
 	Function functions[MAX_FUNCTION_NUMBER];
 } GlobalCDT;

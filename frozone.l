@@ -27,7 +27,10 @@ NEW_LINE    [\n]
 
 %%
 
-frozone         { return MAIN_ID; }
+frozone         {
+                    yylval.sval = strdup(yytext);
+                    return MAIN_ID;
+                }
 "on"            { return ON; }
 "do"            { return DO; }
 "eq"            { return OP_EQ; }
@@ -72,5 +75,5 @@ frozone         { return MAIN_ID; }
 %%
 
 void yyerror(const char *s) {
-    printf("%d : %s %s\n", yylineno, s, yytext );
+    printf("%d : %s : %s\n", yylineno, s, yytext );
 }

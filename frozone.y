@@ -4,26 +4,30 @@
 	#include <string.h>
 	#include "symbolTable.h"
 	#include <stdarg.h> 
-   
+   	
   	#define STR_BLOCK 10 
   	#define MAX_INT_STR_LENGTH 24
   	#define MAX_DBL_STR_LENGTH 24
+  	#define FROZONE "frozone"
 	#define TRUE 1
     #define FALSE 0
 	
 	#define STR_BLOCK 10
 	
 	extern FILE *yyin;
+	extern char * yytext;
 	FILE * fp;
 
 	int yylex();
 	void yyerror(const char *s);
 
+	typedef enum { FUNC_DUP = 1 } errors;
+
 	void addVariable(char * id, int type, void * value);
 	Node addNode(char * string);
 	char * strcatN(int num, ...);
 
-
+	Global gscope;
 %}
 
 %union {
@@ -34,7 +38,8 @@
 	Node node;
 }
 
-%token MAIN_ID ON DO
+%token <sval> MAIN_ID
+%token ON DO
 %token <sval> IDENTIFIER
 %token OP_EQ OP_LT OP_GT OP_LE OP_GE OP_NE
 %token <ival> INT_LIT
@@ -66,7 +71,13 @@ GlobalFunctionList
 
 MainFunction
 		: MAIN_ID '(' ')' '{' FunctionBody '}'
-				{ $$ = addNode(strcatN(3, "int main() {\n", $5->str, "}\n")); }
+				{
+					Function f = malloc(sizeof(FunctionCDT));
+					f->name = $1;
+					f->index = 0;
+					gscope->functions[0] = f;
+					$$ = addNode(strcatN(3, "int main() {\n", $5->str, "}\n"));
+				}
 		;
 
 FunctionList
@@ -78,7 +89,22 @@ FunctionList
 
 Function
 		: IDENTIFIER '(' FunctionArguments ')' '{' FunctionBody '}'
-				{ $$ = addNode(strcatN(6, $1, "(", $3->str, ") {\n", $6->str, "}\n")); }
+				{
+					int i;
+					for(i = 1; i < gscope->functionIndex; i++) {
+						if(strcmp($1, gscope->functions[i]->name) == 0) {
+							yytext = $1;
+							yyerror("No todos somos super");
+							return FUNC_DUP;
+						}
+					}
+					Function f = malloc(sizeof(FunctionCDT));
+					f->name = $1;
+					f->index = 0;
+					gscope->functions[gscope->functionIndex] = f;
+					gscope->functionIndex++;
+					$$ = addNode(strcatN(6, $1, "(", $3->str, ") {\n", $6->str, "}\n"));
+				}
 		;
 
 FunctionArguments
@@ -150,6 +176,8 @@ int main(int argc, char *argv[])
 	}
 
 	fp = fopen("test.c", "w+"); 			//Usar argv[1]
+	gscope = malloc(sizeof(GlobalCDT));
+	gscope->functionIndex = 1;
 
    if(!yyparse())
         printf("\nParsing complete\n");
@@ -173,28 +201,28 @@ Node addNode(char * string) {
 }
 
 char * strcatN(int num, ...) {
-  va_list valist;
-  char * ret = NULL;
-  int len = 0;
-  int i;
+	va_list valist;
+	char * ret = NULL;
+	int len = 0;
+	int i;
  
-  va_start(valist, num);
-  for(i = 0; i < num; i++) {
-    char * param = va_arg(valist, char *);
-    if(param != NULL) {
-      while(*param != '\0') {
-        if(len % STR_BLOCK == 0) {
-          ret = realloc(ret, len + STR_BLOCK);
-        }
-        ret[len++] = *param++;
-      }
-    }
-  }
-  if(len % STR_BLOCK == 0) {
-    ret = realloc(ret, len + 1);
-  }
-  ret[len] = '\0';
+  	va_start(valist, num);
+  	for(i = 0; i < num; i++) {
+    	char * param = va_arg(valist, char *);
+    	if(param != NULL) {
+      		while(*param != '\0') {
+        		if(len % STR_BLOCK == 0) {
+          			ret = realloc(ret, len + STR_BLOCK);
+        		}
+        		ret[len++] = *param++;
+      		}
+    	}
+  	}
+  	if(len % STR_BLOCK == 0) {
+    	ret = realloc(ret, len + 1);
+  	}
+  	ret[len] = '\0';
   
-  va_end(valist);
-  return ret;
+  	va_end(valist);
+  	return ret;
 }
