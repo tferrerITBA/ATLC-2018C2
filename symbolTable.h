@@ -1,22 +1,32 @@
+#define MAX_GLOBAL_VARIABLES 1113
+#define MAX_FUNCTION_NUMBER 1113
+#define MAX_LOCAL_VARIABLES 1113
+
 typedef enum { IVAL, FVAL, SVAL, BVAL } types;
 
-typedef struct Node {
+typedef struct NodeCDT * Node;
+
+typedef struct NodeCDT {
 	char * str;
-} Node;
+} NodeCDT;
 
-/*typedef struct {
-	Variable varGlobal[MAX_GLOBAL_VARIABLES]
-	Function functions[MAX_FUNCTION_NUMBER]
-} Global;
+typedef struct VariableCDT * Variable;
 
-typedef struct {
+typedef struct VariableCDT {
+	char * name;
+	int type;
+} VariableCDT;
+
+typedef struct FunctionCDT * Function;
+
+typedef struct FunctionCDT {
   	char * name;
   	Variable varLocal[MAX_LOCAL_VARIABLES];
-  	
-} Function;
+} FunctionCDT;
 
-typedef struct {
-	Variable varTab[MAX_VARIABLE_NUMBER];
-	int      varNumb;
-} Variable;
-*/
+typedef struct GlobalCDT * Global;
+
+typedef struct GlobalCDT {
+	Variable varGlobal[MAX_GLOBAL_VARIABLES];
+	Function functions[MAX_FUNCTION_NUMBER];
+} GlobalCDT;

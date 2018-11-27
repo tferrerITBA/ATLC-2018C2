@@ -20,8 +20,10 @@
 	void yyerror(const char *s);
 
 	void addVariable(char * id, int type, void * value);
-	Node * addNode(char * string);
+	Node addNode(char * string);
 	char * strcatN(int num, ...);
+
+
 %}
 
 %union {
@@ -29,7 +31,7 @@
 	double dval;
 	int bval;
 	char * sval;
-	Node * node;
+	Node node;
 }
 
 %token MAIN_ID ON DO
@@ -109,7 +111,8 @@ VarDeclaration
 				{
 					char double_str[MAX_DBL_STR_LENGTH];
 					sprintf(double_str, "%g", $3);
-					$$ = addNode(strcatN(5, "double ", $1, " = ", double_str, ";\n")); }
+					$$ = addNode(strcatN(5, "double ", $1, " = ", double_str, ";\n"));
+				}
 		| IDENTIFIER '=' STR_LIT			//{ addVariable($1, SVAL, $3); }
 				{ $$ = addNode(strcatN(5, "char * ", $1, " = ", $3, ";\n")); }
 		| IDENTIFIER '=' BOOL_LIT			//{ addVariable($1, BVAL, $3); }
@@ -163,8 +166,8 @@ void addVariable(char * id, int type, void * value) {
 	
 }
 
-Node * addNode(char * string) {
-	Node * newNode = malloc(sizeof(Node));
+Node addNode(char * string) {
+	Node newNode = malloc(sizeof(NodeCDT));
 	newNode->str = string;
 	return newNode;
 }
