@@ -6,6 +6,8 @@
 	#include <stdarg.h> 
    
   	#define STR_BLOCK 10 
+  	#define MAX_INT_STR_LENGTH 24
+  	#define MAX_DBL_STR_LENGTH 24
 	#define TRUE 1
     #define FALSE 0
 	
@@ -24,7 +26,7 @@
 
 %union {
 	int ival;
-	float fval;
+	double dval;
 	int bval;
 	char * sval;
 	Node * node;
@@ -34,11 +36,11 @@
 %token <sval> IDENTIFIER
 %token OP_EQ OP_LT OP_GT OP_LE OP_GE OP_NE
 %token <ival> INT_LIT
-%token <fval> FL_LIT
+%token <dval> DBL_LIT
 %token <bval> BOOL_LIT
 %token <sval> STR_LIT
 
-%type<node> Program GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration OnStatement
+%type<node> Program GlobalFunctionList MainFunction FunctionList Function FunctionArguments FunctionBody Statement VarDeclaration OnStatement
 
 %start Program
 
@@ -74,11 +76,12 @@ FunctionList
 
 Function
 		: IDENTIFIER '(' FunctionArguments ')' '{' FunctionBody '}'
-				{ /*printf("FUNCION %s END\n", $1);*/$$ = addNode(strcatN(1, "\n")); }
+				{ $$ = addNode(strcatN(6, $1, "(", $3->str, ") {\n", $6->str, "}\n")); }
 		;
 
 FunctionArguments
 		:
+				{ $$ = addNode(""); }
 		;
 
 FunctionBody
@@ -97,11 +100,18 @@ Statement
 
 VarDeclaration
 		: IDENTIFIER '=' INT_LIT			//{ addVariable($1, IVAL, $3); }
-				{ /*printf("%s",$1);*/$$ = addNode(strcatN(3, "int ", $1, ";\n")); }
-		| IDENTIFIER '=' FL_LIT				//{ addVariable($1, FVAL, $3); }
-				{ $$ = addNode(strcatN(3, "float ", $1, ";\n")); }
+				{
+					char int_str[MAX_INT_STR_LENGTH];
+					sprintf(int_str, "%d", $3);
+					$$ = addNode(strcatN(5, "int ", $1, " = ", int_str, ";\n"));
+				}
+		| IDENTIFIER '=' DBL_LIT				//{ addVariable($1, FVAL, $3); }
+				{
+					char double_str[MAX_DBL_STR_LENGTH];
+					sprintf(double_str, "%g", $3);
+					$$ = addNode(strcatN(5, "double ", $1, " = ", double_str, ";\n")); }
 		| IDENTIFIER '=' STR_LIT			//{ addVariable($1, SVAL, $3); }
-				{ $$ = addNode(strcatN(3, "char * ", $1, ";\n")); }
+				{ $$ = addNode(strcatN(5, "char * ", $1, " = ", $3, ";\n")); }
 		| IDENTIFIER '=' BOOL_LIT			//{ addVariable($1, BVAL, $3); }
 				{ $$ = addNode(strcatN(5, "int ", $1, " = ", ($3 == TRUE)? "TRUE" : "FALSE", ";\n")); }  //CUT $1
 		//| IDENTIFIER '=' '(' Condition ')'

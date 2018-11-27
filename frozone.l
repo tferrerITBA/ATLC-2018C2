@@ -19,7 +19,7 @@ Identifier  {Letter}({Letter}|{Digit})*
 AnyStrChar  [^\\"]
 String      [\"]({Escape}|{AnyStrChar})*[\"]
 Integer     {Digit}+
-Float       {Digit}*[\.]{Digit}+
+Double       {Digit}*[\.]{Digit}+
 
 BLANK       [ ]
 TAB         [\t]
@@ -45,18 +45,18 @@ frozone         { return MAIN_ID; }
                     return BOOL_LIT;
                 }
 
-{Float}         {   
-                    yylval.fval = atof(yytext); 
-                    return FL_LIT;
+{Double}         {   
+                    yylval.dval = atof(yytext);
+                    return DBL_LIT;
                 }
 {Separator}     { return yytext[0]; }
 {Delimiter}     { return yytext[0]; }
 {String}        {   
-                    yylval.sval = yytext; // ELIMINAR COMILLAS 
+                    yylval.sval = strdup(yytext); // ELIMINAR COMILLAS 
                     return STR_LIT;
                 }
 {Identifier}    {
-                    yylval.sval = yytext;
+                    yylval.sval = strdup(yytext);
                     return IDENTIFIER;
                 }
 {Integer}       {
