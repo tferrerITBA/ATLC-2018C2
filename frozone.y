@@ -1,6 +1,6 @@
 %{
 	#include <stdio.h>
-	
+
 	extern FILE *yyin;
 
 	int yylex();
@@ -14,7 +14,7 @@
 	char * sval;
 }
 
-%token MAIN_ID ON DO
+%token MAIN_ID ON DO CYCLE
 %token <sval> IDENTIFIER
 %token OP_EQ OP_LT OP_GT OP_LE OP_GE OP_NE
 %token <ival> INT_LIT
@@ -76,6 +76,10 @@ OnStatement
 		: ON '(' Condition ')' DO '{' FunctionBody '}'
 		;
 
+CycleStatement
+	: CYCLE '{' FunctionBody '}' ON '(' Condition ')'
+	;
+
 Condition
 		: IDENTIFIER OP_EQ IDENTIFIER
 		| IDENTIFIER OP_LT IDENTIFIER
@@ -109,5 +113,5 @@ int main(int argc, char *argv[])
 }
 
 void addVariable(char * id, int type, void * value) {
-	
+
 }

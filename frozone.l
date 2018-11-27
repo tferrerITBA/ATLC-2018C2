@@ -29,6 +29,7 @@ NEW_LINE    [\n]
 frozone         { return MAIN_ID; }
 "on"            { return ON; }
 "do"            { return DO; }
+"cycle"         { return CYCLE; }
 "eq"            { return OP_EQ; }
 "lt"            { return OP_LT; }
 "gt"            { return OP_GT; }
@@ -44,17 +45,17 @@ frozone         { return MAIN_ID; }
                     return BOOL_LIT;
                 }
 
-{Float}         {   
-                    yylval.fval = atof(yytext); 
+{Float}         {
+                    yylval.fval = atof(yytext);
                     return FL_LIT;
                 }
 {Separator}     { return yytext[0]; }
 {Delimiter}     { return yytext[0]; }
-{String}        {   
-                    yylval.sval = yytext; // ELIMINAR COMILLAS 
+{String}        {
+                    yylval.sval = yytext; // ELIMINAR COMILLAS
                     return STR_LIT;
                 }
-{Identifier}    {   
+{Identifier}    {
                     yylval.sval = yytext;
                     return IDENTIFIER;
                 }
