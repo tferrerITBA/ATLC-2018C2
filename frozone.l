@@ -1,12 +1,11 @@
 %{
     #include <stdio.h>
+    #include <string.h>
     #include "symbolTable.h"
     #include "y.tab.h"
 
-    #define TRUE 1;
-    #define FALSE 0;
-
-    void yyerror(const char *s);
+    extern FILE * fp;
+    extern Global gscope;
 %}
 
 Separator   [\(\)\{\}\[\]\;\,\.]
@@ -16,6 +15,7 @@ Digit       [0-9]
 Letter      [a-zA-Z_]
 Identifier  {Letter}({Letter}|{Digit})*
 
+FunctionDec function[ ]+{Identifier}
 AnyStrChar  [^\\"]
 String      [\"]({Escape}|{AnyStrChar})*[\"]
 Integer     {Digit}+
@@ -29,6 +29,11 @@ NEW_LINE    [\n]
 
 frozone         {
                     yylval.sval = strdup(yytext);
+                    if(insertFunction(yylval.sval) != SUCCESS) {
+                        fclose(fp);
+                        remove("./test.c");
+                        exit(1);                // SACAR ESTO
+                    }
                     return MAIN_ID;
                 }
 "on"            { return ON; }
@@ -58,6 +63,15 @@ frozone         {
                     yylval.sval = strdup(yytext); // ELIMINAR COMILLAS 
                     return STR_LIT;
                 }
+{FunctionDec}   {
+                    yylval.sval = strdup(yytext);
+                    if(insertFunction(yylval.sval) != SUCCESS) {
+                        fclose(fp);
+                        remove("./test.c");
+                        exit(1);                // SACAR ESTO
+                    }
+                    return FN_ID;
+}
 {Identifier}    {
                     yylval.sval = strdup(yytext);
                     return IDENTIFIER;

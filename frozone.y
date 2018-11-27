@@ -8,9 +8,6 @@
   	#define STR_BLOCK 10 
   	#define MAX_INT_STR_LENGTH 24
   	#define MAX_DBL_STR_LENGTH 24
-  	#define FROZONE "frozone"
-	#define TRUE 1
-    #define FALSE 0
 	
 	#define STR_BLOCK 10
 	
@@ -19,13 +16,10 @@
 	FILE * fp;
 
 	int yylex();
-	void yyerror(const char *s);
 
-	typedef enum { FUNC_DUP = 1 } errors;
-
-	void addVariable(char * id, int type, void * value);
 	Node addNode(char * string);
 	char * strcatN(int num, ...);
+	void freeResources();
 
 	Global gscope;
 %}
@@ -39,6 +33,7 @@
 }
 
 %token <sval> MAIN_ID
+%token <sval> FN_ID
 %token ON DO
 %token <sval> IDENTIFIER
 %token OP_EQ OP_LT OP_GT OP_LE OP_GE OP_NE
@@ -55,7 +50,7 @@
 
 Program
 		: GlobalFunctionList
-				{ $$ = addNode(strcatN(1, $1->str)); fprintf(fp, "%s", $$->str); }
+				{ $$ = addNode(strcatN(3, "typedef enum { FALSE = 0, TRUE } bool;\n", "typedef struct VarCDT {\n\tchar * str;\n\tint i;\n\tdouble d;\n}\n\n", $1->str)); fprintf(fp, "%s", $$->str); } // METER EN EL .H
 		;
 
 GlobalFunctionList
@@ -72,11 +67,7 @@ GlobalFunctionList
 MainFunction
 		: MAIN_ID '(' ')' '{' FunctionBody '}'
 				{
-					Function f = malloc(sizeof(FunctionCDT));
-					f->name = $1;
-					f->index = 0;
-					gscope->functions[0] = f;
-					$$ = addNode(strcatN(3, "int main() {\n", $5->str, "}\n"));
+					$$ = addNode(strcatN(3, "int main() {\n", $5->str, "}\n\n"));
 				}
 		;
 
@@ -88,22 +79,9 @@ FunctionList
 		;
 
 Function
-		: IDENTIFIER '(' FunctionArguments ')' '{' FunctionBody '}'
+		: FN_ID '(' FunctionArguments ')' '{' FunctionBody '}'
 				{
-					int i;
-					for(i = 1; i < gscope->functionIndex; i++) {
-						if(strcmp($1, gscope->functions[i]->name) == 0) {
-							yytext = $1;
-							yyerror("No todos somos super");
-							return FUNC_DUP;
-						}
-					}
-					Function f = malloc(sizeof(FunctionCDT));
-					f->name = $1;
-					f->index = 0;
-					gscope->functions[gscope->functionIndex] = f;
-					gscope->functionIndex++;
-					$$ = addNode(strcatN(6, $1, "(", $3->str, ") {\n", $6->str, "}\n"));
+					$$ = addNode(strcatN(6, getFunctionName($1), "(", $3->str, ") {\n", $6->str, "}\n\n"));
 				}
 		;
 
@@ -127,22 +105,42 @@ Statement
 		;
 
 VarDeclaration
-		: IDENTIFIER '=' INT_LIT			//{ addVariable($1, IVAL, $3); }
+		: IDENTIFIER '=' INT_LIT
 				{
 					char int_str[MAX_INT_STR_LENGTH];
 					sprintf(int_str, "%d", $3);
-					$$ = addNode(strcatN(5, "int ", $1, " = ", int_str, ";\n"));
+					if(addVariable($1, IVAL) == VAR_CREATED) {
+						$$ = addNode(strcatN(7, "VarCDT ", $1,";\n", $1, ".i = ", int_str, ";\n"));
+					} else {
+						$$ = addNode(strcatN(4, $1, ".i = ", int_str, ";\n"));
+					}
 				}
-		| IDENTIFIER '=' DBL_LIT				//{ addVariable($1, FVAL, $3); }
+		| IDENTIFIER '=' DBL_LIT
 				{
 					char double_str[MAX_DBL_STR_LENGTH];
 					sprintf(double_str, "%g", $3);
-					$$ = addNode(strcatN(5, "double ", $1, " = ", double_str, ";\n"));
+					if(addVariable($1, DVAL) == VAR_CREATED) {
+						$$ = addNode(strcatN(7, "VarCDT ", $1,";\n", $1, ".d = ", double_str, ";\n"));
+					} else {
+						$$ = addNode(strcatN(4, $1, ".d = ", double_str, ";\n"));
+					}
 				}
-		| IDENTIFIER '=' STR_LIT			//{ addVariable($1, SVAL, $3); }
-				{ $$ = addNode(strcatN(5, "char * ", $1, " = ", $3, ";\n")); }
-		| IDENTIFIER '=' BOOL_LIT			//{ addVariable($1, BVAL, $3); }
-				{ $$ = addNode(strcatN(5, "int ", $1, " = ", ($3 == TRUE)? "TRUE" : "FALSE", ";\n")); }  //CUT $1
+		| IDENTIFIER '=' STR_LIT
+				{
+					if(addVariable($1, SVAL) == VAR_CREATED) {
+						$$ = addNode(strcatN(7, "VarCDT ", $1,";\n", $1, ".str = ", $3, ";\n"));
+					} else {
+						$$ = addNode(strcatN(4, $1, ".str = ", $3, ";\n"));
+					}
+				}
+		| IDENTIFIER '=' BOOL_LIT
+				{
+					if(addVariable($1, BVAL) == VAR_CREATED) {
+						$$ = addNode(strcatN(7, "VarCDT ", $1,";\n", $1, ".b = ", ($3 == TRUE)? "TRUE" : "FALSE", ";\n"));
+					} else {
+						$$ = addNode(strcatN(4, $1, ".b = ", ($3 == TRUE)? "TRUE" : "FALSE", ";\n"));
+					}
+				}
 		//| IDENTIFIER '=' '(' Condition ')'
 		//		{ $$ = addNode()}
 		;
@@ -178,11 +176,14 @@ int main(int argc, char *argv[])
 	fp = fopen("test.c", "w+"); 			//Usar argv[1]
 	gscope = malloc(sizeof(GlobalCDT));
 	gscope->functionIndex = 1;
+	gscope->mainFound = FALSE;
 
    if(!yyparse())
         printf("\nParsing complete\n");
     else
         printf("\nParsing failed\n");
+
+    freeResources();
 
 	fclose(fp);
 
@@ -190,8 +191,23 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void addVariable(char * id, int type, void * value) {
-	
+varStatus addVariable(char * varName, int type) {
+	Function func = gscope->functions[gscope->currentFunction];
+	int i;
+	for(i = 0; i < func->variableIndex; i++) {
+		if(strcmp(varName, func->varLocal[i]->name) == 0) {
+			if(func->varLocal[i]->type != type) {
+				func->varLocal[i]->type = type;
+			}
+			return VAR_MODIFIED;
+		}
+	}
+	if(i >= func->variableIndex) {
+		func->varLocal[func->variableIndex] = malloc(sizeof(VariableCDT));
+		func->varLocal[func->variableIndex]->name = varName;
+		func->varLocal[func->variableIndex++]->type = type;
+	}
+	return VAR_CREATED;
 }
 
 Node addNode(char * string) {
@@ -225,4 +241,19 @@ char * strcatN(int num, ...) {
   
   	va_end(valist);
   	return ret;
+}
+
+void freeResources() {
+	int i;
+    for(i = 0; i < gscope->variableIndex; i++) {
+    	free(gscope->varGlobal[i]);
+    }
+    for(i = 0; i < gscope->functionIndex; i++) {
+    	int j;
+    	for(j = 0; j < gscope->functions[i]->variableIndex; j++) {
+    		free(gscope->functions[i]->varLocal[j]);
+    	}
+    	free(gscope->functions[i]);
+    }
+    free(gscope);
 }
