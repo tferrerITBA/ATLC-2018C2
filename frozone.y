@@ -1,5 +1,9 @@
 %{
 	#include <stdio.h>
+	#include <stdlib.h>
+	#include <stdarg.h>
+	
+	#define STR_BLOCK 10
 	
 	extern FILE *yyin;
 
@@ -110,4 +114,32 @@ int main(int argc, char *argv[])
 
 void addVariable(char * id, int type, void * value) {
 	
+}
+
+
+char * strconcat(int num, ...) {
+	va_list valist;
+	char * ret = NULL;
+	int len = 0;
+	int i;
+
+	va_start(valist, num);
+	for(i = 0; i < num; i++) {
+		char * param = va_arg(valist, char *);
+		if(param != NULL) {
+			while(*param != '\0') {
+				if(len % STR_BLOCK == 0) {
+					ret = realloc(ret, len + STR_BLOCK);
+				}
+				ret[len++] = *param++;
+			}
+		}
+	}
+	if(len % STR_BLOCK == 0) {
+		ret = realloc(ret, len + 1);
+	}
+	ret[len] = '\0';
+	
+	va_end(valist);
+	return ret;
 }
