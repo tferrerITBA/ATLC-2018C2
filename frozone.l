@@ -1,5 +1,6 @@
 %{
     #include <stdio.h>
+    #include "symbolTable.h"
     #include "y.tab.h"
 
     #define TRUE 1;
