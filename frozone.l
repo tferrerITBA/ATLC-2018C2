@@ -1,5 +1,6 @@
 %{
     #include <stdio.h>
+    #include "symbolTable.h"
     #include "y.tab.h"
 
     #define TRUE 1;
@@ -54,7 +55,7 @@ frozone         { return MAIN_ID; }
                     yylval.sval = yytext; // ELIMINAR COMILLAS 
                     return STR_LIT;
                 }
-{Identifier}    {   
+{Identifier}    {
                     yylval.sval = yytext;
                     return IDENTIFIER;
                 }

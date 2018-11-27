@@ -5,6 +5,7 @@ y.tab.c
 frozone
 Tests/*
 !Tests/.gitkeep
+test.c
 
 # Prerequisites
 *.d
