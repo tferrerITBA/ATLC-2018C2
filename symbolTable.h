@@ -26,7 +26,6 @@ typedef struct VariableCDT * Variable;
 
 typedef struct VariableCDT {
 	char * name;
-	int type;
 } VariableCDT;
 
 typedef struct FunctionCDT * Function;
@@ -55,6 +54,8 @@ void yyerror(const char *s);
 int insertFunction(char * name, int argc);
 char * getFunctionName(char * str);
 int foundFunction(char * name);
-varStatus addVariable(char * varName, int type);
+varStatus addVariable(char * varName);
 bool foundVariable(char * varName);
 int ArgcMatchesPrototype(char * name, int argc);
+Function getFunction(char * name);
+int variableInCurrentFunction(char * name);

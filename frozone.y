@@ -20,6 +20,7 @@
 	Node addNode(char * string);
 	ArgNode addArgNode(char * string, int argc);
 	char * strcatN(int num, ...);
+	char * repeatStr(char * str, int count);
 	void freeResources();
 
 	Global gscope;
@@ -45,8 +46,8 @@
 %token <sval> STR_LIT
 %token <sval> RETURN
 
-%type<node> Program HeaderSection FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration FunctionCall OnStatement CycleStatement ReturnStatement IdentifierList
-%type<argnode> FunctionArguments NonZeroFunctionArguments
+%type<node> Program HeaderSection FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration FunctionCall OnStatement CycleStatement ReturnStatement
+%type<argnode> FunctionArguments NonEmptyFunctionArguments FunctionCallArgs NonEmptyFunctionCallArgs
 
 %start Program
 
@@ -76,7 +77,7 @@ FunctionPrototype
 		: IDENTIFIER '(' INT_LIT ')'
 				{
 					insertFunction($1, $3);
-					$$ = addNode(strcatN(4, "Var ", $1, "(", ");\n"));//FALTAN ARGS
+					$$ = addNode(strcatN(4, "Var ", $1, "(", /*strcat(repeatStr("Var, ", $3 - 1), "Var"),*/ ");\n"));//FALTAN ARGS
 				}
 		;
 
@@ -110,7 +111,6 @@ Function
 				{
 					char * functionName = getFunctionName($1);
 					if(!ArgcMatchesPrototype(functionName, $3->argc)) {
-						yyerror("Argument count incompatible with prototype declaration");
 						return ARGC_ERR;
 					}
 					$$ = addNode(strcatN(8, "Var ", functionName, "(", $3->str, ") {\n", $6->str, $7->str, "}\n\n"));
@@ -118,13 +118,13 @@ Function
 		;
 
 FunctionArguments
-		: NonZeroFunctionArguments
+		: NonEmptyFunctionArguments
 				{ $$ = addArgNode(strcatN(1, $1->str), $1->argc); }
 		|		{ $$ = addArgNode("", 0); }
 		;
 
-NonZeroFunctionArguments
-		: NonZeroFunctionArguments ',' IDENTIFIER
+NonEmptyFunctionArguments
+		: NonEmptyFunctionArguments ',' IDENTIFIER
 				{ $$ = addArgNode(strcatN(3, $1->str, ", Var ", $3), $1->argc + 1); }
 		| IDENTIFIER
 				{ $$ = addArgNode(strcatN(2, "Var ", $1), 1); }
@@ -153,7 +153,7 @@ VarDeclaration
 				{
 					char int_str[MAX_INT_STR_LENGTH];
           			sprintf(int_str, "%d", $3);
-					if(addVariable($1, IVAL) == VAR_CREATED) {
+					if(addVariable($1) == VAR_CREATED) {
 						$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithInt(", $1, ", ", int_str, ");\n"));
 					} else {
 						$$ = addNode(strcatN(5, "varWithInt(", $1, ", ", int_str, ");\n"));
@@ -163,7 +163,7 @@ VarDeclaration
 				{
 					char double_str[MAX_DBL_STR_LENGTH];
           			sprintf(double_str, "%g", $3);
-					if(addVariable($1, DVAL) == VAR_CREATED) {
+					if(addVariable($1) == VAR_CREATED) {
 						$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithDbl(", $1, ", ", double_str, ");\n"));
 					} else {
 						$$ = addNode(strcatN(5, "varWithDbl(", $1, ", ", double_str, ");\n"));
@@ -171,7 +171,7 @@ VarDeclaration
 				}
 		| IDENTIFIER '=' STR_LIT
 				{
-					if(addVariable($1, SVAL) == VAR_CREATED) {
+					if(addVariable($1) == VAR_CREATED) {
 						$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithStr(", $1, ", ", $3, ");\n"));
 					} else {
 						$$ = addNode(strcatN(5, "varWithStr(", $1, ", ", $3, ");\n"));
@@ -179,7 +179,7 @@ VarDeclaration
 				}
 		| IDENTIFIER '=' BOOL_LIT
 				{
-					if(addVariable($1, BVAL) == VAR_CREATED) {
+					if(addVariable($1) == VAR_CREATED) {
 						$$ = addNode(strcatN(7, "Var ", $1, " = malloc(sizeof(VarCDT));\nvarWithBool(", $1, ", ", ($3 == TRUE)? "TRUE" : "FALSE", ");\n"));
 					} else {
 						$$ = addNode(strcatN(5, "varWithBool(", $1, ", ", ($3 == TRUE)? "TRUE" : "FALSE", ");\n"));
@@ -187,17 +187,14 @@ VarDeclaration
 				}
 		| IDENTIFIER '=' FunctionCall
 				{
-					$$ = addNode(strcatN(1, $1, " = ", $3->str));
+					if(addVariable($1) == VAR_CREATED) {
+						$$ = addNode(strcatN(4, "Var ", $1, " = ", $3->str));
+					} else {
+						$$ = addNode(strcatN(3, $1, " = ", $3->str));
+					}
 				}
 		//| IDENTIFIER '=' '(' Condition ')'
 		//		{ $$ = addNode()}
-		;
-
-FunctionCall
-		: IDENTIFIER '(' IdentifierList ')'
-				{
-					////////////////////////////////////////////////////////
-				}
 		;
 
 OnStatement
@@ -250,10 +247,45 @@ Condition
 		| IDENTIFIER OP_NE IDENTIFIER
 		;
 
-IdentifierList
-		:
-			{ $$ = addNode(strcatN(1, "")); }
+FunctionCall
+		: IDENTIFIER '(' FunctionCallArgs ')'
+				{
+					Function f = getFunction($1);
+					if(f == NULL) {
+						yyerror("Function does not exist");
+						return NOT_FOUND;
+					}
+					if(f->argc != $3->argc) {
+						yyerror("Argument count incompatible with prototype declaration");
+						return ARGC_ERR;
+					}
+					$$ = addNode(strcatN(4, $1, "(", $3->str, ");\n"));
+				}
 		;
+
+FunctionCallArgs
+		: NonEmptyFunctionCallArgs
+				{ $$ = addArgNode($1->str, $1->argc); }
+		|		{ $$ = addArgNode("", 0); }
+		;
+
+NonEmptyFunctionCallArgs
+		: NonEmptyFunctionCallArgs ',' IDENTIFIER
+				{
+					if(!variableInCurrentFunction($3)) { // && NOT GLOBAL VAR
+						return NOT_FOUND;
+					}
+					$$ = addArgNode(strcatN(3, $1->str, ", ", $3), $1->argc + 1);
+				}
+		| IDENTIFIER
+				{
+					if(!variableInCurrentFunction($1)) {
+						return NOT_FOUND;
+					}
+					$$ = addArgNode($1, 1);
+				}
+		;
+
 %%
 
 int main(int argc, char *argv[])
@@ -287,21 +319,17 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-varStatus addVariable(char * varName, int type) {
+varStatus addVariable(char * varName) {
 	Function func = gscope->functions[gscope->currentFunction];
 	int i;
 	for(i = 0; i < func->variableIndex; i++) {
 		if(strcmp(varName, func->varLocal[i]->name) == 0) {
-			if(func->varLocal[i]->type != type) {
-				func->varLocal[i]->type = type;
-			}
 			return VAR_MODIFIED;
 		}
 	}
 	if(i >= func->variableIndex) {
 		func->varLocal[func->variableIndex] = malloc(sizeof(VariableCDT));
-		func->varLocal[func->variableIndex]->name = varName;
-		func->varLocal[func->variableIndex++]->type = type;
+		func->varLocal[func->variableIndex++]->name = varName;
 	}
 	return VAR_CREATED;
 }
@@ -355,6 +383,17 @@ char * strcatN(int num, ...) {
 
   	va_end(valist);
   	return ret;
+}
+
+char * repeatStr(char * str, int count) {
+	if(count == 0)
+		return NULL;
+	char * ret = malloc(strlen(str) * count);
+	while(count > 0) {
+		strcat(ret, str);
+		count--;
+	}
+	return ret;
 }
 
 void freeResources() {

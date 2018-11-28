@@ -67,7 +67,7 @@ char * getFunctionName(char * str) {
  *
  */
 
-int foundFunction(char * name) {//Prorotipo no existe // Prototipo existe y funcion ya fue definida // Prorotipo existe y no coincide params
+int foundFunction(char * name) {
 	name = getFunctionName(name);
 	int i;
 	for(i = 1; i < gscope->functionIndex; i++) {
@@ -94,8 +94,30 @@ int foundFunction(char * name) {//Prorotipo no existe // Prototipo existe y func
 
 int ArgcMatchesPrototype(char * name, int argc) {
 	if(gscope->functions[gscope->currentFunction]->argc != argc) {
+		yyerror("Argument count incompatible with prototype declaration");
 		return FALSE;
 	} else {
 		return TRUE;
 	}
+}
+
+Function getFunction(char * name) {
+	int i;
+	for(i = 0; i < gscope->functionIndex; i++) {
+		if(strcmp(name, gscope->functions[i]->name) == 0) {
+			return gscope->functions[i];
+		}
+	}
+	return NULL;
+}
+
+int variableInCurrentFunction(char * name) {
+	int i;
+	for(i = 0; i < gscope->functions[gscope->currentFunction]->variableIndex; i++) {
+		if(strcmp(name, gscope->functions[gscope->currentFunction]->varLocal[i]->name) == 0) {
+			return TRUE;
+		}
+	}
+	yyerror("Unknown variable");
+	return FALSE;
 }
