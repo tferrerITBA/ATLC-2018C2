@@ -1,12 +1,11 @@
 %{
     #include <stdio.h>
+    #include <string.h>
     #include "symbolTable.h"
     #include "y.tab.h"
 
-    #define TRUE 1;
-    #define FALSE 0;
-
-    void yyerror(const char *s);
+    extern FILE * fp;
+    extern Global gscope;
 %}
 
 Separator   [\(\)\{\}\[\]\;\,\.]
@@ -16,10 +15,11 @@ Digit       [0-9]
 Letter      [a-zA-Z_]
 Identifier  {Letter}({Letter}|{Digit})*
 
+FunctionDec function[ ]+{Identifier}
 AnyStrChar  [^\\"]
 String      [\"]({Escape}|{AnyStrChar})*[\"]
 Integer     {Digit}+
-Float       {Digit}*[\.]{Digit}+
+Double       {Digit}*[\.]{Digit}+
 
 BLANK       [ ]
 TAB         [\t]
@@ -27,7 +27,15 @@ NEW_LINE    [\n]
 
 %%
 
-frozone         { return MAIN_ID; }
+frozone         {
+                    yylval.sval = strdup(yytext);
+                    if(insertFunction(yylval.sval, 0) != SUCCESS) {
+                        fclose(fp);
+                        remove("./test.c");
+                        exit(1);                // SACAR ESTO
+                    }
+                    return MAIN_ID;
+                }
 "on"            { return ON; }
 "do"            { return DO; }
 "cycle"         { return CYCLE; }
@@ -45,19 +53,32 @@ frozone         { return MAIN_ID; }
                     yylval.bval = FALSE;
                     return BOOL_LIT;
                 }
+"return"        {
+                    yylval.sval = strdup(yytext);
+                    return RETURN;
+                }
 
-{Float}         {
-                    yylval.fval = atof(yytext);
-                    return FL_LIT;
+{Double}         {
+                    yylval.dval = atof(yytext);
+                    return DBL_LIT;
                 }
 {Separator}     { return yytext[0]; }
 {Delimiter}     { return yytext[0]; }
 {String}        {
-                    yylval.sval = yytext; // ELIMINAR COMILLAS
+                    yylval.sval = strdup(yytext); // ELIMINAR COMILLAS
                     return STR_LIT;
                 }
+{FunctionDec}   {
+                    yylval.sval = strdup(yytext);
+                    if(foundFunction(yylval.sval) != SUCCESS) {
+                        fclose(fp);
+                        remove("./test.c");
+                        exit(1);                // SACAR ESTO
+                    }
+                    return FN_ID;
+}
 {Identifier}    {
-                    yylval.sval = yytext;
+                    yylval.sval = strdup(yytext);
                     return IDENTIFIER;
                 }
 {Integer}       {
@@ -73,5 +94,5 @@ frozone         { return MAIN_ID; }
 %%
 
 void yyerror(const char *s) {
-    printf("%d : %s %s\n", yylineno, s, yytext );
+    printf("%d : %s : %s\n", yylineno, s, yytext );
 }
