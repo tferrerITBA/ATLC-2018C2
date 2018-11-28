@@ -125,16 +125,22 @@ FunctionArguments
 
 NonEmptyFunctionArguments
 		: NonEmptyFunctionArguments ',' IDENTIFIER
-				{ $$ = addArgNode(strcatN(3, $1->str, ", Var ", $3), $1->argc + 1); }
+				{
+					addNewVariable($3);
+					$$ = addArgNode(strcatN(3, $1->str, ", Var ", $3), $1->argc + 1);
+				}
 		| IDENTIFIER
-				{ $$ = addArgNode(strcatN(2, "Var ", $1), 1); }
+				{
+					addNewVariable($1);
+					$$ = addArgNode(strcatN(2, "Var ", $1), 1);
+				}
 		;
 
 FunctionBody
 		: FunctionBody Statement
 				{ $$ = addNode(strcatN(2, $1->str, $2->str)); }
 		|
-				{ $$ = addNode(""); } // AGREGAR ; A LINEA VACIA
+				{ $$ = addNode(""); } //CHEQUEAR
 		;
 
 Statement
@@ -193,6 +199,7 @@ VarDeclaration
 						$$ = addNode(strcatN(3, $1, " = ", $3->str));
 					}
 				}
+		//| IDENTIFIER '=' Operation ///////////////////////////////////////
 		//| IDENTIFIER '=' '(' Condition ')'
 		//		{ $$ = addNode()}
 		;

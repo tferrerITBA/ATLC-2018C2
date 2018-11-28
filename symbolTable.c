@@ -21,6 +21,7 @@ int insertFunction(char * name, int argc) {
 			yyerror("Not all of us are super");
 			return MAIN_DUP;
 		}
+		gscope->mainFound = TRUE;
 		Function f = malloc(sizeof(FunctionCDT));
 		strcpy(f->name, name);
 		f->argc = argc;
@@ -120,4 +121,11 @@ int variableInCurrentFunction(char * name) {
 	}
 	yyerror("Unknown variable");
 	return FALSE;
+}
+
+void addNewVariable(char * varName) {
+	Function f = gscope->functions[gscope->currentFunction];
+	f->varLocal[f->variableIndex] = malloc(sizeof(VariableCDT));
+	f->varLocal[f->variableIndex++]->name = varName;
+	return;
 }

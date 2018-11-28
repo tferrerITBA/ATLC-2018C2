@@ -59,3 +59,4 @@ bool foundVariable(char * varName);
 int ArgcMatchesPrototype(char * name, int argc);
 Function getFunction(char * name);
 int variableInCurrentFunction(char * name);
+void addNewVariable(char * name);
