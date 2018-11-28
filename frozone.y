@@ -34,7 +34,7 @@
 
 %token <sval> MAIN_ID
 %token <sval> FN_ID
-%token ON DO
+%token ON DO CYCLE
 %token <sval> IDENTIFIER
 %token OP_EQ OP_LT OP_GT OP_LE OP_GE OP_NE
 %token <ival> INT_LIT
@@ -43,7 +43,7 @@
 %token <sval> STR_LIT
 %token <sval> RETURN
 
-%type<node> Program HeaderSection FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionArguments FunctionBody Statement VarDeclaration FunctionCall OnStatement ReturnStatement IdentifierList
+%type<node> Program HeaderSection FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionArguments FunctionBody Statement VarDeclaration FunctionCall OnStatement ReturnStatement IdentifierList CycleStatement
 
 %start Program
 
@@ -126,6 +126,8 @@ Statement
 				{ $$ = addNode(strcatN(1, $1->str)); }
 		| OnStatement
 				{ $$ = addNode(strcatN(1, $1->str)); }
+		| CycleStatement
+				{ $$ = addNode(strcatN(1, $1->str)); }
 		| ReturnStatement
 				{ $$ = addNode(strcatN(1, $1->str)); }
 		;
@@ -189,6 +191,7 @@ OnStatement
 
 CycleStatement
 	: CYCLE '{' FunctionBody '}' ON '(' Condition ')'
+				{ $$ = addNode(strcatN(4, "do {", $3->str, "} while(", /*$7->str,*/ ")\n")); }
 	;
 
 ReturnStatement
