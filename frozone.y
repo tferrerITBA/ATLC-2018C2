@@ -45,7 +45,7 @@
 %token <sval> STR_LIT
 %token <sval> RETURN
 
-%type<node> Program HeaderSection FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration FunctionCall OnStatement ReturnStatement IdentifierList
+%type<node> Program HeaderSection FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration FunctionCall OnStatement CycleStatement ReturnStatement IdentifierList
 %type<argnode> FunctionArguments NonZeroFunctionArguments
 
 %start Program
