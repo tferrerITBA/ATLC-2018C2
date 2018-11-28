@@ -18,6 +18,7 @@
 	int yylex();
 
 	Node addNode(char * string);
+	ArgNode addArgNode(char * string, int argc);
 	char * strcatN(int num, ...);
 	void freeResources();
 
@@ -30,6 +31,7 @@
 	bool bval;
 	char * sval;
 	Node node;
+	ArgNode argnode;
 }
 
 %token <sval> MAIN_ID
@@ -43,7 +45,8 @@
 %token <sval> STR_LIT
 %token <sval> RETURN
 
-%type<node> Program HeaderSection FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionArguments FunctionBody Statement VarDeclaration FunctionCall OnStatement ReturnStatement IdentifierList
+%type<node> Program HeaderSection FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration FunctionCall OnStatement ReturnStatement IdentifierList
+%type<argnode> FunctionArguments NonZeroFunctionArguments
 
 %start Program
 
@@ -51,7 +54,7 @@
 
 Program
 		: HeaderSection GlobalFunctionList
-				{ $$ = addNode(strcatN(3, "typedef enum { FALSE = 0, TRUE } bool;\n", "typedef struct VarCDT {\n\tchar * str;\n\tint i;\n\tdouble d;\nbool b;\n}\ntypedef struct VarCDT * Var;\n\n", $1->str)); fprintf(fp, "%s", $$->str); } // METER EN EL .H
+				{ $$ = addNode(strcatN(4, "typedef enum { FALSE = 0, TRUE } bool;\n", "typedef struct VarCDT {\n\tchar * str;\n\tint i;\n\tdouble d;\nbool b;\n}\ntypedef struct VarCDT * Var;\n\n", $1->str, $2->str)); fprintf(fp, "%s", $$->str); } // METER EN EL .H
 		;
 
 HeaderSection
@@ -73,7 +76,7 @@ FunctionPrototype
 		: IDENTIFIER '(' INT_LIT ')'
 				{
 					insertFunction($1, $3);
-					//$$ = addNode(strcatN(5, "Var ", $1, "(", $3->str, ");\n"));
+					$$ = addNode(strcatN(4, "Var ", $1, "(", ");\n"));//FALTAN ARGS
 				}
 		;
 
@@ -105,13 +108,26 @@ FunctionList
 Function
 		: FN_ID '(' FunctionArguments ')' '{' FunctionBody ReturnStatement '}'
 				{
-					$$ = addNode(strcatN(8, "Var ", getFunctionName($1), "(", $3->str, ") {\n", $6->str, $7->str, "}\n\n"));
+					char * functionName = getFunctionName($1);
+					if(!ArgcMatchesPrototype(functionName, $3->argc)) {
+						yyerror("Argument count incompatible with prototype declaration");
+						return ARGC_ERR;
+					}
+					$$ = addNode(strcatN(8, "Var ", functionName, "(", $3->str, ") {\n", $6->str, $7->str, "}\n\n"));
 				}
 		;
 
 FunctionArguments
-		:
-				{ $$ = addNode(""); }
+		: NonZeroFunctionArguments
+				{ $$ = addArgNode(strcatN(1, $1->str), $1->argc); }
+		|		{ $$ = addArgNode("", 0); }
+		;
+
+NonZeroFunctionArguments
+		: NonZeroFunctionArguments ',' IDENTIFIER
+				{ $$ = addArgNode(strcatN(3, $1->str, ", Var ", $3), $1->argc + 1); }
+		| IDENTIFIER
+				{ $$ = addArgNode(strcatN(2, "Var ", $1), 1); }
 		;
 
 FunctionBody
@@ -251,12 +267,12 @@ int main(int argc, char *argv[])
 	gscope->functionIndex = 1;
 	gscope->mainFound = FALSE;
 
-   if(!yyparse())
+    if(!yyparse())
         printf("\nParsing complete\n");
     else
         printf("\nParsing failed\n");
 
-    freeResources();
+    //freeResources();
 
 	fclose(fp);
 
@@ -297,6 +313,13 @@ bool foundVariable(char * varName) {
 Node addNode(char * string) {
 	Node newNode = malloc(sizeof(NodeCDT));
 	newNode->str = string;
+	return newNode;
+}
+
+ArgNode addArgNode(char * string, int argc) {
+	ArgNode newNode = malloc(sizeof(ArgNodeCDT));
+	newNode->str = string;
+	newNode->argc = argc;
 	return newNode;
 }
 
