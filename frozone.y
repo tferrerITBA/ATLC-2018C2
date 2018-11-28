@@ -3,14 +3,14 @@
 	#include <stdlib.h>
 	#include <string.h>
 	#include "symbolTable.h"
-	#include <stdarg.h> 
-   	
-  	#define STR_BLOCK 10 
-  	#define MAX_INT_STR_LENGTH 24
-  	#define MAX_DBL_STR_LENGTH 24
-	
+	#include <stdarg.h>
+
+	#define TRUE 1
+  #define FALSE 0
+	#define MAX_INT_STR_LENGTH 24
+	#define MAX_DBL_STR_LENGTH 24
 	#define STR_BLOCK 10
-	
+
 	extern FILE *yyin;
 	extern char * yytext;
 	FILE * fp;
@@ -36,7 +36,7 @@
 
 %token <sval> MAIN_ID
 %token <sval> FN_ID
-%token ON DO
+%token ON DO CYCLE
 %token <sval> IDENTIFIER
 %token OP_EQ OP_LT OP_GT OP_LE OP_GE OP_NE
 %token <ival> INT_LIT
@@ -142,6 +142,8 @@ Statement
 				{ $$ = addNode(strcatN(1, $1->str)); }
 		| OnStatement
 				{ $$ = addNode(strcatN(1, $1->str)); }
+		| CycleStatement
+				{ $$ = addNode(strcatN(1, $1->str)); }
 		| ReturnStatement
 				{ $$ = addNode(strcatN(1, $1->str)); }
 		;
@@ -202,6 +204,11 @@ OnStatement
 		: ON '(' Condition ')' DO '{' FunctionBody '}'
 				{ $$ = addNode(strcatN(4, "if(", /*$3->str,*/ ") {\n", $7->str, "}\n")); }
 		;
+
+CycleStatement
+	: CYCLE '{' FunctionBody '}' ON '(' Condition ')'
+				{ $$ = addNode(strcatN(4, "do {", $3->str, "} while(", /*$7->str,*/ ")\n")); }
+	;
 
 ReturnStatement
 		: RETURN IDENTIFIER
@@ -328,7 +335,7 @@ char * strcatN(int num, ...) {
 	char * ret = NULL;
 	int len = 0;
 	int i;
- 
+
   	va_start(valist, num);
   	for(i = 0; i < num; i++) {
     	char * param = va_arg(valist, char *);
@@ -345,7 +352,7 @@ char * strcatN(int num, ...) {
     	ret = realloc(ret, len + 1);
   	}
   	ret[len] = '\0';
-  
+
   	va_end(valist);
   	return ret;
 }

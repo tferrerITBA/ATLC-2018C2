@@ -38,6 +38,7 @@ frozone         {
                 }
 "on"            { return ON; }
 "do"            { return DO; }
+"cycle"         { return CYCLE; }
 "eq"            { return OP_EQ; }
 "lt"            { return OP_LT; }
 "gt"            { return OP_GT; }
@@ -57,14 +58,14 @@ frozone         {
                     return RETURN;
                 }
 
-{Double}         {   
+{Double}         {
                     yylval.dval = atof(yytext);
                     return DBL_LIT;
                 }
 {Separator}     { return yytext[0]; }
 {Delimiter}     { return yytext[0]; }
-{String}        {   
-                    yylval.sval = strdup(yytext); // ELIMINAR COMILLAS 
+{String}        {
+                    yylval.sval = strdup(yytext); // ELIMINAR COMILLAS
                     return STR_LIT;
                 }
 {FunctionDec}   {
