@@ -338,7 +338,7 @@ Operation
 							} else if($1->n == DVAL) {
 								$$ = addOpNode(DVAL, NULL, NULL, strcatN(4, $1->str, " + ", $3, "->d"), NULL, NULL);
 							} else if($1->n == SVAL) {
-								$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcat(", $1->str, ", ", $3, "->str)"), NULL);
+								$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcatN(2, ", $1->str, ", ", $3, "->str)"), NULL);
 							} else {
 								$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, $1->str);
 							}
