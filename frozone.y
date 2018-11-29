@@ -562,6 +562,99 @@ int main(int argc, char *argv[])
 	}
 
 	fp = fopen("test.c", "w+"); 			//Usar argv[1]
+
+	fprintf(fp, "#include <stdlib.h> \n \
+#include <stdio.h> \n \
+#include <string.h> \n \
+\n \
+#define MAX_STR_LENGTH 100 \n \
+\n \
+typedef enum { INT, DBL, STR, BOOL } type; \n \
+typedef enum { FALSE = 0 , TRUE } bool;\n\
+typedef struct VarCDT * Var; \n \
+typedef struct VarCDT {\n \
+	int i;\n \
+	double d;\n \
+	char str[MAX_STR_LENGTH];\n \
+	bool b;\n \
+	type t;\n \
+} VarCDT;\n \
+\n \
+Var newVarWithInt(int num);\n \
+Var newVarWithDbl(double num);\n \
+Var newVarWithStr(char * string);\n \
+Var newVarWithBool(bool boolean);\n \
+Var varWithInt(Var v, int num);\n \
+Var varWithDbl(Var v, double num);\n \
+Var varWithStr(Var v, char * string);\n \
+Var varWithBool(Var v, bool boolean);\n \
+\n \
+Var newVarWithInt(int num) {\n \
+	Var v = malloc(sizeof(VarCDT));\n \
+	v->str = malloc(MAX_STR_LENGTH);\n \
+	return varWithInt(v, num);\n \
+}\n \
+\n \
+Var newVarWithDbl(double num) { \n \
+	Var v = malloc(sizeof(VarCDT));\n \
+	v->str = malloc(MAX_STR_LENGTH);\n \
+	return varWithDbl(v, num);\n \
+}\n \
+\n \
+Var newVarWithStr(char * string) {\n \
+	Var v = malloc(sizeof(VarCDT));\n \
+	v->str = malloc(MAX_STR_LENGTH);\n \
+	return varWithStr(v, string);\n \
+}\n \
+\n \
+Var newVarWithBool(bool boolean) {\n \
+	Var v = malloc(sizeof(VarCDT));\n \
+	v->str = malloc(MAX_STR_LENGTH);\n \
+	return varWithBool(v, boolean);\n \
+}\n \
+\n \
+Var varWithInt(Var v, int num) {\n \
+	v->i = num;\n \
+	v->d = num;\n \
+	sprintf(v->str, \"%%d\", num);\n \
+	v->b = (num)? TRUE : FALSE;\n \
+	v->t = INT;\n \
+	return v;\n \
+}\n \
+\n \
+Var varWithDbl(Var v, double num) {\n \
+	v->i = (int) num;\n \
+	v->d = num;\n \
+	sprintf(v->str, \"%%g\", num);\n \
+	v->b = ((int) num)? TRUE : FALSE;\n \
+	v->t = DBL;\n \
+	return v;\n \
+}\n \
+\n \
+Var varWithStr(Var v, char * string) {\n \
+	v->i = atoi(string);\n \
+	v->d = atof(string);\n \
+	strcpy(v->str, string);\n \
+	v->b = (*string)? TRUE : FALSE;\n \
+	v->t = STR;\n \
+	return v;\n \
+}\n \
+\n \
+Var varWithBool(Var v, bool boolean) {\n \
+	if(boolean) {\n \
+		v->i = 1;\n \
+		v->d = 1.0;\n \
+		v->str = \"true\";\n \
+	} else {\n \
+		v->i = 0;\n \
+		v->d = 0.0;\n \
+		v->str = \"false\";\n \
+	}\n \
+	v->b = boolean;\n \
+	v->t = BOOL;\n \
+	return v;\n \
+} \n");
+
 	gscope = malloc(sizeof(GlobalCDT));
 	gscope->functionIndex = 1;
 	gscope->mainFound = FALSE;
