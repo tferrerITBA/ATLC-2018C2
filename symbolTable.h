@@ -5,7 +5,7 @@
 #define FROZONE "frozone"
 
 typedef enum { FALSE = 0, TRUE } bool;
-typedef enum { IVAL, DVAL, SVAL, BVAL } types;
+typedef enum { IVAL, DVAL, SVAL, BVAL, UNKNOWN } types;
 typedef enum { SUCCESS = 0, MAIN_DUP, FUNC_DUP, NOT_FOUND, ARGC_ERR } errors;
 typedef enum { VAR_CREATED, VAR_MODIFIED } varStatus;
 
@@ -15,17 +15,26 @@ typedef struct NodeCDT {
 	char * str;
 } NodeCDT;
 
-typedef struct ArgNodeCDT * ArgNode;
+typedef struct IntNodeCDT * IntNode;
 
-typedef struct ArgNodeCDT {
+typedef struct IntNodeCDT {
 	char * str;
-	int argc;
-} ArgNodeCDT;
+	int n;
+} IntNodeCDT;
+
+typedef struct OpNodeCDT * OpNode;
+
+typedef struct OpNodeCDT {
+	int type;
+	char * baseId;
+	char * str;
+} OpNodeCDT;
 
 typedef struct VariableCDT * Variable;
 
 typedef struct VariableCDT {
 	char * name;
+	int type;
 } VariableCDT;
 
 typedef struct FunctionCDT * Function;

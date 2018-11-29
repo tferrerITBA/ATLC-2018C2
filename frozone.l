@@ -32,7 +32,7 @@ frozone         {
                     if(insertFunction(yylval.sval, 0) != SUCCESS) {
                         fclose(fp);
                         remove("./test.c");
-                        exit(1);                // SACAR ESTO
+                        exit(1);                // SACAR ESTO, PONER INFO EN NODOS
                     }
                     return MAIN_ID;
                 }

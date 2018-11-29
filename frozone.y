@@ -18,7 +18,8 @@
 	int yylex();
 
 	Node addNode(char * string);
-	ArgNode addArgNode(char * string, int argc);
+	IntNode addIntNode(char * string, int n);
+	OpNode addOpNode(int type, char * baseId, char * string);
 	char * strcatN(int num, ...);
 	char * repeatStr(char * str, int count);
 	void freeResources();
@@ -32,7 +33,8 @@
 	bool bval;
 	char * sval;
 	Node node;
-	ArgNode argnode;
+	IntNode intnode;
+	OpNode opnode;
 }
 
 %token <sval> MAIN_ID
@@ -47,7 +49,11 @@
 %token <sval> RETURN
 
 %type<node> Program HeaderSection FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration FunctionCall OnStatement CycleStatement ReturnStatement
-%type<argnode> FunctionArguments NonEmptyFunctionArguments FunctionCallArgs NonEmptyFunctionCallArgs
+%type<intnode> FunctionArguments NonEmptyFunctionArguments FunctionCallArgs NonEmptyFunctionCallArgs Literal
+%type<opnode> Operation
+
+%left '-' '+'
+%left '*' '/'
 
 %start Program
 
@@ -74,9 +80,12 @@ FunctionPrototypes
 		;
 
 FunctionPrototype
-		: IDENTIFIER '(' INT_LIT ')'
+		: IDENTIFIER '(' Literal ')'
 				{
-					insertFunction($1, $3);
+					if($3->n != IVAL) {
+						yyerror("Number of arguments must be integer");
+					}
+					insertFunction($1, atoi($3->str));
 					$$ = addNode(strcatN(4, "Var ", $1, "(", /*strcat(repeatStr("Var, ", $3 - 1), "Var"),*/ ");\n"));//FALTAN ARGS
 				}
 		;
@@ -110,7 +119,7 @@ Function
 		: FN_ID '(' FunctionArguments ')' '{' FunctionBody ReturnStatement '}'
 				{
 					char * functionName = getFunctionName($1);
-					if(!ArgcMatchesPrototype(functionName, $3->argc)) {
+					if(!ArgcMatchesPrototype(functionName, $3->n)) {
 						return ARGC_ERR;
 					}
 					$$ = addNode(strcatN(8, "Var ", functionName, "(", $3->str, ") {\n", $6->str, $7->str, "}\n\n"));
@@ -119,20 +128,20 @@ Function
 
 FunctionArguments
 		: NonEmptyFunctionArguments
-				{ $$ = addArgNode(strcatN(1, $1->str), $1->argc); }
-		|		{ $$ = addArgNode("", 0); }
+				{ $$ = addIntNode(strcatN(1, $1->str), $1->n); }
+		|		{ $$ = addIntNode("", 0); }
 		;
 
 NonEmptyFunctionArguments
 		: NonEmptyFunctionArguments ',' IDENTIFIER
 				{
 					addNewVariable($3);
-					$$ = addArgNode(strcatN(3, $1->str, ", Var ", $3), $1->argc + 1);
+					$$ = addIntNode(strcatN(3, $1->str, ", Var ", $3), $1->n + 1);
 				}
 		| IDENTIFIER
 				{
 					addNewVariable($1);
-					$$ = addArgNode(strcatN(2, "Var ", $1), 1);
+					$$ = addIntNode(strcatN(2, "Var ", $1), 1);
 				}
 		;
 
@@ -155,7 +164,7 @@ Statement
 		;
 
 VarDeclaration
-		: IDENTIFIER '=' INT_LIT
+		/*: IDENTIFIER '=' INT_LIT
 				{
 					char int_str[MAX_INT_STR_LENGTH];
           			sprintf(int_str, "%d", $3);
@@ -190,6 +199,30 @@ VarDeclaration
 					} else {
 						$$ = addNode(strcatN(5, "varWithBool(", $1, ", ", ($3 == TRUE)? "TRUE" : "FALSE", ");\n"));
 					}
+				}*/
+		: IDENTIFIER '=' Literal
+				{
+					if(addVariable($1) == VAR_CREATED) {
+						if($3->n == IVAL) {
+							$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithInt(", $1, ", ", $3->str, ");\n"));
+						} else if($3->n == DVAL) {
+							$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithDbl(", $1, ", ", $3->str, ");\n"));
+						} else if($3->n == SVAL) {
+							$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithStr(", $1, ", ", $3->str, ");\n"));
+						} else if($3->n == BVAL) {
+							$$ = addNode(strcatN(7, "Var ", $1, " = malloc(sizeof(VarCDT));\nvarWithBool(", $1, ", ", $3->str, ");\n"));
+						}
+					} else {
+						if($3->n == IVAL) {
+							$$ = addNode(strcatN(5, "varWithInt(", $1, ", ", $3->str, ");\n"));
+						} else if($3->n == DVAL) {
+							$$ = addNode(strcatN(5, "varWithDbl(", $1, ", ", $3->str, ");\n"));
+						} else if($3->n == SVAL) {
+							$$ = addNode(strcatN(5, "varWithStr(", $1, ", ", $3->str, ");\n"));
+						} else if($3->n == BVAL) {
+							$$ = addNode(strcatN(5, "varWithBool(", $1, ", ", $3->str, ");\n"));
+						}
+					}
 				}
 		| IDENTIFIER '=' FunctionCall
 				{
@@ -199,7 +232,22 @@ VarDeclaration
 						$$ = addNode(strcatN(3, $1, " = ", $3->str));
 					}
 				}
-		//| IDENTIFIER '=' Operation ///////////////////////////////////////
+		| IDENTIFIER '=' Operation
+				{
+					if(!foundVariable($1)) {
+						yyerror("Returned non-existent variable in function");
+						return NOT_FOUND;
+					}
+					if(addVariable($1) == VAR_CREATED) {
+						$$ = addNode(strcatN(7, "Var ", $1, "->", ($3->type == IVAL)? "i" : ($3->type == DVAL)? "d" : ($3->type == SVAL)? "s" : ($3->type == BVAL)? "b" : strcatN(4, $1, "->(", $3->baseId, "->t)"), " = ", $3->str, ";\n"));
+					} else {
+						if($3->type != UNKNOWN) {
+							$$ = addNode(strcatN(6, $1, "->", ($3->type == IVAL)? "i" : ($3->type == DVAL)? "d" : ($3->type == SVAL)? "s" : "b", " = ", $3->str, ";\n"));
+						} else {
+							$$ = addNode(strcatN(17, "((", $3->baseId, "->t == INT)? ", $1, "->i : (", $3->baseId, "->t == DBL)? ", $1, "->d : (", $3->baseId, "->t == STR)? ", $1, "->str : ", $1, "->b) = ", $3->str, ";\n"));
+						}
+					}
+				}
 		//| IDENTIFIER '=' '(' Condition ')'
 		//		{ $$ = addNode()}
 		;
@@ -216,33 +264,152 @@ CycleStatement
 
 ReturnStatement
 		: RETURN IDENTIFIER
-			{
-				if(!foundVariable($2)) {
-					yyerror("Returned non-existent variable in function");
-					return NOT_FOUND;
-				}
-				$$ = addNode(strcatN(3, "return ", $2, ";\n"));
-			}
+				{
+					if(!foundVariable($2)) {
+						yyerror("Returned non-existent variable in function");
+						return NOT_FOUND;
+					}
+					$$ = addNode(strcatN(3, "return ", $2, ";\n"));
+				}/*
 		| RETURN INT_LIT
-			{
-				char int_str[MAX_INT_STR_LENGTH];
-          		sprintf(int_str, "%d", $2);
-				$$ = addNode(strcatN(5, "return newVarWithInt(", $1, ", ", int_str, ");\n"));
-			}
+				{
+					char int_str[MAX_INT_STR_LENGTH];
+	          		sprintf(int_str, "%d", $2);
+					$$ = addNode(strcatN(5, "return newVarWithInt(", $1, ", ", int_str, ");\n"));
+				}
 		| RETURN DBL_LIT
-			{
-				char double_str[MAX_DBL_STR_LENGTH];
-          		sprintf(double_str, "%g", $2);
-				$$ = addNode(strcatN(5, "return newVarWithDbl(", $1, ", ", double_str, ");\n"));
-			}
+				{
+					char double_str[MAX_DBL_STR_LENGTH];
+	          		sprintf(double_str, "%g", $2);
+					$$ = addNode(strcatN(5, "return newVarWithDbl(", $1, ", ", double_str, ");\n"));
+				}
 		| RETURN STR_LIT
-			{
-				$$ = addNode(strcatN(5, "return newVarWithStr(", $1, ", ", $2, ");\n"));
-			}
+				{
+					$$ = addNode(strcatN(5, "return newVarWithStr(", $1, ", ", $2, ");\n"));
+				}
 		| RETURN BOOL_LIT
-			{
-				$$ = addNode(strcatN(5, "return newVarWithBool(", $1, ", ", ($2 == TRUE)? "TRUE" : "FALSE", ");\n"));
-			}
+				{
+					$$ = addNode(strcatN(5, "return newVarWithBool(", $1, ", ", ($2 == TRUE)? "TRUE" : "FALSE", ");\n"));
+				}*/
+		| RETURN Literal
+				{
+					if($2->n == IVAL) {
+						$$ = addNode(strcatN(3, "return newVarWithInt(", $2->str, ");\n"));
+					} else if($2->n == DVAL) {
+						$$ = addNode(strcatN(3, "return newVarWithDbl(", $2->str, ");\n"));
+					} else if($2->n == SVAL) {
+						$$ = addNode(strcatN(3, "return newVarWithStr(", $2->str, ");\n"));
+					} else if($2->n == BVAL) {
+						$$ = addNode(strcatN(3, "return newVarWithBool(", $2->str, ");\n"));
+					}
+				}
+		;
+
+Operation
+		: IDENTIFIER '+' IDENTIFIER
+					{
+						if(!(variableInCurrentFunction($1) && variableInCurrentFunction($3))) { // && NOT GLOBAL VAR
+							return NOT_FOUND;
+						}
+						$$ = addOpNode(UNKNOWN, $1, strcatN(17, "switch(", $1, "->t) {\ncase INT: ", $1, "->i + ", $3, "->i;\nbreak;\ncase DBL: ", $1, "->d + ", $3, "->d;\nbreak;\ncase STR: strcat(", $1, "->str, ", $3, "->str);\nbreak;\ncase BOOL: ", $1, "->b\nbreak;\n}\n"));
+					}
+		| IDENTIFIER '+' Literal
+					{
+						if(!variableInCurrentFunction($1)) { // && NOT GLOBAL VAR
+							return NOT_FOUND;
+						}
+						if($3->n == IVAL) {
+							$$ = addOpNode(UNKNOWN, $1, strcatN(17, "switch(", $1, "->t) {\ncase INT: ", $1, "->i + ", $3->str, ";\nbreak;\ncase DBL: ", $1, "->d + ", $3->str, ";\nbreak;\ncase STR: strcat(", $1, "->str, \"", $3->str, "\");\nbreak;\ncase BOOL: ", $1, "->b\nbreak;\n}\n"));
+						} else if($3->n == DVAL) {
+							$$ = addOpNode(UNKNOWN, $1, strcatN(17, "switch(", $1, "->t) {\ncase INT: ", $1, "->i + ", $3->str, ";\nbreak;\ncase DBL: ", $1, "->d + ", $3->str, ";\nbreak;\ncase STR: strcat(", $1, "->str, \"", $3->str, "\");\nbreak;\ncase BOOL: ", $1, "->b\nbreak;\n}\n"));
+						} else if($3->n == SVAL) {
+							$$ = addOpNode(UNKNOWN, $1, strcatN(13, "switch(", $1, "->t) {\ncase INT: ", $1, "->i;\nbreak;\ncase DBL: ", $1, "->d;\nbreak;\ncase STR: strcat(", $1, "->str, ", $3->str, ");\nbreak;\ncase BOOL: ", $1, "->b\nbreak;\n}\n"));
+						} else {
+							$$ = addOpNode(UNKNOWN, $1, strcatN(11, "switch(", $1, "->t) {\ncase INT: ", $1, "->i;\nbreak;\ncase DBL: ", $1, "->d;\nbreak;\ncase STR: ", $1, "->str;\nbreak;\ncase BOOL: ", $1, "->b\nbreak;\n}\n"));
+						}
+					}
+		| Literal '+' IDENTIFIER
+					{
+						if(!variableInCurrentFunction($3)) { // && NOT GLOBAL VAR
+							return NOT_FOUND;
+						}
+						if($1->n == IVAL) {
+							$$ = addOpNode(IVAL, NULL, strcatN(4, $1->str, " + ", $3, "->i"));
+						} else if($1->n == DVAL) {
+							$$ = addOpNode(DVAL, NULL, strcatN(4, $1->str, " + ", $3, "->d"));
+						} else if($1->n == SVAL) {
+							$$ = addOpNode(SVAL, NULL, strcatN(5, "strcat(", $1->str, ", ", $3, "->str)"));
+						} else {
+							$$ = addOpNode(BVAL, NULL, $1->str);
+						}
+					}
+		| Literal '+' Literal
+					{
+						if($1->n == IVAL) {
+							if($3->n == IVAL) {
+								$$ = addOpNode(IVAL, NULL, strcatN(3, $1->str, " + ", $3->str));
+							} else if($3->n == DVAL) {
+								$$ = addOpNode(IVAL, NULL, strcatN(3, $1->str, " + (int)", $3->str));
+							} else if($3->n == SVAL) {
+								$$ = addOpNode(IVAL, NULL, $1->str);
+							} else {
+								$$ = addOpNode(IVAL, NULL, $1->str);
+							}
+						} else if($1->n == DVAL) {
+							if($3->n == IVAL) {
+								$$ = addOpNode(DVAL, NULL, strcatN(3, $1->str, " + ", $3->str));
+							} else if($3->n == DVAL) {
+								$$ = addOpNode(DVAL, NULL, strcatN(3, $1->str, " + ", $3->str));
+							} else if($3->n == SVAL) {
+								$$ = addOpNode(DVAL, NULL, $1->str);
+							} else {
+								$$ = addOpNode(DVAL, NULL, $1->str);
+							}
+						} else if($1->n == SVAL) {
+							if($3->n == IVAL) {
+								$$ = addOpNode(SVAL, NULL, strcatN(5, "strcat(", $1->str, ", \"", $3->str, "\")"));
+							} else if($3->n == DVAL) {
+								$$ = addOpNode(SVAL, NULL, strcatN(5, "strcat(", $1->str, ", \"", $3->str, "\")"));
+							} else if($3->n == SVAL) {
+								$$ = addOpNode(SVAL, NULL, strcatN(5, "strcat(", $1->str, ", ", $3->str, ")"));
+							} else {
+								$$ = addOpNode(SVAL, NULL, strcatN(5, "strcat(", $1->str, ", \"", ($3->str == "TRUE")? "true" : "false", "\")"));
+							}
+						} else {
+							if($3->n == IVAL) {
+								$$ = addOpNode(BVAL, NULL, $1->str);
+							} else if($3->n == DVAL) {
+								$$ = addOpNode(BVAL, NULL, $1->str);
+							} else if($3->n == SVAL) {
+								$$ = addOpNode(BVAL, NULL, $1->str);
+							} else {
+								$$ = addOpNode(BVAL, NULL, $1->str);
+							}
+						}
+					}
+		;
+
+Literal
+		: INT_LIT
+				{
+					char int_str[MAX_INT_STR_LENGTH];
+          			sprintf(int_str, "%d", $1);
+          			$$ = addIntNode(int_str, IVAL);
+          		}
+		| DBL_LIT
+				{
+					char double_str[MAX_DBL_STR_LENGTH];
+          			sprintf(double_str, "%g", $1);
+          			$$ = addIntNode(double_str, DVAL);
+          		}
+		| STR_LIT
+				{
+					$$ = addIntNode($1, SVAL);
+				}
+		| BOOL_LIT
+				{
+					$$ = addIntNode(($1 == TRUE)? "TRUE" : "FALSE", BVAL);
+				}
 		;
 
 Condition
@@ -262,7 +429,7 @@ FunctionCall
 						yyerror("Function does not exist");
 						return NOT_FOUND;
 					}
-					if(f->argc != $3->argc) {
+					if(f->argc != $3->n) {
 						yyerror("Argument count incompatible with prototype declaration");
 						return ARGC_ERR;
 					}
@@ -272,8 +439,8 @@ FunctionCall
 
 FunctionCallArgs
 		: NonEmptyFunctionCallArgs
-				{ $$ = addArgNode($1->str, $1->argc); }
-		|		{ $$ = addArgNode("", 0); }
+				{ $$ = addIntNode($1->str, $1->n); }
+		|		{ $$ = addIntNode("", 0); }
 		;
 
 NonEmptyFunctionCallArgs
@@ -282,14 +449,14 @@ NonEmptyFunctionCallArgs
 					if(!variableInCurrentFunction($3)) { // && NOT GLOBAL VAR
 						return NOT_FOUND;
 					}
-					$$ = addArgNode(strcatN(3, $1->str, ", ", $3), $1->argc + 1);
+					$$ = addIntNode(strcatN(3, $1->str, ", ", $3), $1->n + 1);
 				}
 		| IDENTIFIER
 				{
 					if(!variableInCurrentFunction($1)) {
 						return NOT_FOUND;
 					}
-					$$ = addArgNode($1, 1);
+					$$ = addIntNode($1, 1);
 				}
 		;
 
@@ -358,10 +525,18 @@ Node addNode(char * string) {
 	return newNode;
 }
 
-ArgNode addArgNode(char * string, int argc) {
-	ArgNode newNode = malloc(sizeof(ArgNodeCDT));
+IntNode addIntNode(char * string, int n) {
+	IntNode newNode = malloc(sizeof(IntNodeCDT));
 	newNode->str = string;
-	newNode->argc = argc;
+	newNode->n = n;
+	return newNode;
+}
+
+OpNode addOpNode(int type, char * baseId, char * string) {
+	OpNode newNode = malloc(sizeof(OpNodeCDT));
+	newNode->type = type;
+	newNode->baseId = baseId;
+	newNode->str = string;
 	return newNode;
 }
 
