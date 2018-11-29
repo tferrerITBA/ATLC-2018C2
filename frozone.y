@@ -278,18 +278,18 @@ PrintStatement
 					if(!variableInCurrentFunction($3)) { // && NOT GLOBAL VAR
 						return NOT_FOUND;
 					}
-					$$ = addNode(strcatN(17, "if(", $3, "->t == INT) {\nprintf(\"%d\", ", $3, "->i);\n} else if(", $3, "->t == DBL) {\nprintf(\"%g\", ", $3, "->d);\n} else if(", $3, "->t == STR) {\nprintf(\"%s\", ", $3, "->str);\n} else if(", $3, "->t == BOOL) {\nprintf(\"%s\", (", $3, "->b)? \"true\" : \"false\");\n}\n"));
+					$$ = addNode(strcatN(17, "if(", $3, "->t == INT) {\nprintf(\"%d\\n\", ", $3, "->i);\n} else if(", $3, "->t == DBL) {\nprintf(\"%g\\n\", ", $3, "->d);\n} else if(", $3, "->t == STR) {\nprintf(\"%s\\n\", ", $3, "->str);\n} else if(", $3, "->t == BOOL) {\nprintf(\"%s\\n\", (", $3, "->b)? \"true\" : \"false\");\n}\n"));
 				}
 		| PRINT '(' Literal ')'
 				{
 					if($3->n == IVAL) {
-						$$ = addNode(strcatN(3, "printf(\"%d\", ", $3->str, ");\n"));
+						$$ = addNode(strcatN(3, "printf(\"%d\\n\", ", $3->str, ");\n"));
 					} else if($3->n == DVAL) {
-						$$ = addNode(strcatN(3, "printf(\"%g\", ", $3->str, ");\n"));
+						$$ = addNode(strcatN(3, "printf(\"%g\\n\", ", $3->str, ");\n"));
 					} else if($3->n == SVAL) {
-						$$ = addNode(strcatN(3, "printf(\"%s\", ", $3->str, ");\n"));
+						$$ = addNode(strcatN(3, "printf(\"%s\\n\", ", $3->str, ");\n"));
 					} else if($3->n == BVAL) {
-						$$ = addNode(strcatN(3, "printf(\"%s\", (", $3->str, ")? \"true\" : \"false\");\n"));
+						$$ = addNode(strcatN(3, "printf(\"%s\\n\", (", $3->str, ")? \"true\" : \"false\");\n"));
 					}
 				}
 		;
