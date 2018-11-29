@@ -36,24 +36,25 @@
 	IntNode intnode;
 	OpNode opnode;
 	arithmOp aop;
+	relationalOp rop;
 }
 
 %token <sval> MAIN_ID
 %token <sval> FN_ID
 %token ON DO CYCLE
 %token <sval> IDENTIFIER
-%token OP_EQ OP_LT OP_GT OP_LE OP_GE OP_NE
 %token <sval> INT_LIT
 %token <sval> DBL_LIT
 %token <bval> BOOL_LIT
 %token <sval> STR_LIT
 %token <aop> ARITHM_OP
+%token <rop> REL_OP
 %token <sval> RETURN
 %token <sval> PRINT
 
 %type<node> Program HeaderSection FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration FunctionCall OnStatement CycleStatement ReturnStatement PrintStatement
 %type<intnode> FunctionArguments NonEmptyFunctionArguments FunctionCallArgs NonEmptyFunctionCallArgs Literal
-%type<opnode> Operation
+%type<opnode> Operation Condition
 
 %start Program
 
@@ -236,7 +237,7 @@ OnStatement
 		;
 
 CycleStatement
-	: CYCLE '{' FunctionBody '}' ON '(' Condition ')'
+	: CYCLE '{' FunctionBody '}' ON Condition
 				{ $$ = addNode(strcatN(4, "do {", $3->str, "} while(", /*$7->str,*/ ")\n")); }
 	;
 
@@ -427,17 +428,75 @@ Literal
 		: INT_LIT		{ $$ = addIntNode($1, IVAL); }
 		| DBL_LIT		{ $$ = addIntNode($1, DVAL); }
 		| STR_LIT		{ $$ = addIntNode($1, SVAL); }
-		| BOOL_LIT		{ $$ = addIntNode(($1 == TRUE)? "TRUE" : "FALSE", BVAL); }
+		| BOOL_LIT		{ $$ = addIntNode(($1)? "TRUE" : "FALSE", BVAL); }
 		;
 
 Condition
-		: IDENTIFIER OP_EQ IDENTIFIER
-		| IDENTIFIER OP_LT IDENTIFIER
-		| IDENTIFIER OP_GT IDENTIFIER
-		| IDENTIFIER OP_LE IDENTIFIER
-		| IDENTIFIER OP_GE IDENTIFIER
-		| IDENTIFIER OP_NE IDENTIFIER
-		| IDENTIFIER
+		: /*'(' IDENTIFIER REL_OP IDENTIFIER ')'
+				{
+					if(!(variableInCurrentFunction($1) && variableInCurrentFunction($3))) { // && NOT GLOBAL VAR
+						return NOT_FOUND;
+					}
+					if($2 == EQ) {
+						$$ = addOpNode(UNKNOWN, $1, strcatN(5, "(", $1, "->i == ", $3, "->i)"), strcatN(7, "(fabs(", $1, "->d - ", $3, "->d) < ", EPSILON, ")"), strcatN(5, "(strcmp(", $1, "->str, ", $3, "->str) == 0)"), strcatN(5, "(", $1, "->b == ", $3, "->b)"));
+					} else {
+
+					}
+				}
+		| '(' IDENTIFIER REL_OP Literal ')'
+				{
+					if(!(variableInCurrentFunction($1))) { // && NOT GLOBAL VAR
+						return NOT_FOUND;
+					}
+					if($3->n == IVAL) {
+						if($2 == EQ) {
+							$$ = addOpNode(IVAL, $1, strcatN(5, "(", $1, "->i == ", $3->str, ")"), NULL, NULL, NULL);
+						}
+					} else if($3->n == DVAL) {
+						if($2 == EQ) {
+							$$ = addOpNode(DVAL, $1, NULL, strcatN(7, "(fabs(", $1, "->d, ", $3->str, ") < ", EPSILON, ")"), NULL, NULL);
+						}
+					} else if($3->n == SVAL) {
+						if($2 == EQ) {
+							$$ = addOpNode(SVAL, $1, NULL, NULL, strcatN(5, "(strcmp(", $1, "->str, \"", $3->str, "\") == 0)"), NULL);
+						}
+					} else if($3->n == BVAL) {
+						if($2 == EQ) {
+							$$ = addOpNode(BVAL, $1, NULL, NULL, NULL, strcatN(5, "(", $1, "->b == ", $3->str, ")"));
+						}
+					}
+				}
+		| '(' Literal REL_OP IDENTIFIER ')'
+				{
+					if(!(variableInCurrentFunction($3))) { // && NOT GLOBAL VAR
+						return NOT_FOUND;
+					}
+					if($1->n == IVAL) {
+						if($2 == EQ) {
+							$$ = addOpNode(IVAL, NULL, strcatN(5, "(", $1->str, " == ", $3, "->i)"), NULL, NULL, NULL);
+						}
+					} else if($1->n == DVAL) {
+						if($2 == EQ) {
+							$$ = addOpNode(DVAL, NULL, NULL, strcatN(7, "(fabs(", $1->str, ", ", $3, "->d) < ", EPSILON, ")"), NULL, NULL);
+						}
+					} else if($1->n == SVAL) {
+						if($2 == EQ) {
+							$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "(strcmp(\"", $1->str, "\", ", $3, "->str) == 0)"), NULL);
+						}
+					} else if($1->n == BVAL) {
+						if($2 == EQ) {
+							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(5, "(", $1->str, " == ", $3, "->b)"));
+						}
+					}
+				}
+		| */'(' IDENTIFIER ')'
+				{
+					$$ = addOpNode(BVAL, $2, NULL, NULL, NULL, strcatN(3, "(", $2, "->b)"));
+				}
+		| '(' Literal ')'
+				{
+					$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(3, "(", $2->str, ")"));
+				}
 		;
 
 FunctionCall

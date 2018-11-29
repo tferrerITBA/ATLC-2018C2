@@ -39,12 +39,30 @@ frozone         {
 "on"            { return ON; }
 "do"            { return DO; }
 "cycle"         { return CYCLE; }
-"eq"            { return OP_EQ; }
-"lt"            { return OP_LT; }
-"gt"            { return OP_GT; }
-"le"            { return OP_LE; }
-"ge"            { return OP_GE; }
-"ne"            { return OP_NE; }
+"eq"            {
+                    yylval.rop = EQ;
+                    return REL_OP;
+                }
+"lt"            {
+                    yylval.rop = LT;
+                    return REL_OP;
+                }
+"gt"            {
+                    yylval.rop = GT;
+                    return REL_OP;
+                }
+"le"            {
+                    yylval.rop = LE;
+                    return REL_OP;
+                }
+"ge"            {
+                    yylval.rop = GE;
+                    return REL_OP;
+                }
+"ne"            {
+                    yylval.rop = NE;
+                    return REL_OP;
+                }
 "true"          {
                     yylval.bval = TRUE;
                     return BOOL_LIT;
