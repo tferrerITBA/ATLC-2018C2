@@ -318,9 +318,7 @@ Operation
 						if(!variableInCurrentFunction($1)) { // && NOT GLOBAL VAR
 							return NOT_FOUND;
 						}
-						if($3->n == IVAL) {
-							$$ = addOpNode(UNKNOWN, $1, strcatN(17, "switch(", $1, "->t) {\ncase INT: ", $1, "->i + ", $3->str, ";\nbreak;\ncase DBL: ", $1, "->d + ", $3->str, ";\nbreak;\ncase STR: strcat(", $1, "->str, \"", $3->str, "\");\nbreak;\ncase BOOL: ", $1, "->b\nbreak;\n}\n"));
-						} else if($3->n == DVAL) {
+						if($3->n == IVAL || $3->n == DVAL) {
 							$$ = addOpNode(UNKNOWN, $1, strcatN(17, "switch(", $1, "->t) {\ncase INT: ", $1, "->i + ", $3->str, ";\nbreak;\ncase DBL: ", $1, "->d + ", $3->str, ";\nbreak;\ncase STR: strcat(", $1, "->str, \"", $3->str, "\");\nbreak;\ncase BOOL: ", $1, "->b\nbreak;\n}\n"));
 						} else if($3->n == SVAL) {
 							$$ = addOpNode(UNKNOWN, $1, strcatN(13, "switch(", $1, "->t) {\ncase INT: ", $1, "->i;\nbreak;\ncase DBL: ", $1, "->d;\nbreak;\ncase STR: strcat(", $1, "->str, ", $3->str, ");\nbreak;\ncase BOOL: ", $1, "->b\nbreak;\n}\n"));
@@ -350,25 +348,17 @@ Operation
 								$$ = addOpNode(IVAL, NULL, strcatN(3, $1->str, " + ", $3->str));
 							} else if($3->n == DVAL) {
 								$$ = addOpNode(IVAL, NULL, strcatN(3, $1->str, " + (int)", $3->str));
-							} else if($3->n == SVAL) {
-								$$ = addOpNode(IVAL, NULL, $1->str);
 							} else {
 								$$ = addOpNode(IVAL, NULL, $1->str);
 							}
 						} else if($1->n == DVAL) {
-							if($3->n == IVAL) {
+							if($3->n == IVAL || $3->n == DVAL) {
 								$$ = addOpNode(DVAL, NULL, strcatN(3, $1->str, " + ", $3->str));
-							} else if($3->n == DVAL) {
-								$$ = addOpNode(DVAL, NULL, strcatN(3, $1->str, " + ", $3->str));
-							} else if($3->n == SVAL) {
-								$$ = addOpNode(DVAL, NULL, $1->str);
 							} else {
 								$$ = addOpNode(DVAL, NULL, $1->str);
 							}
 						} else if($1->n == SVAL) {
-							if($3->n == IVAL) {
-								$$ = addOpNode(SVAL, NULL, strcatN(5, "strcat(", $1->str, ", \"", $3->str, "\")"));
-							} else if($3->n == DVAL) {
+							if($3->n == IVAL || $3->n == DVAL) {
 								$$ = addOpNode(SVAL, NULL, strcatN(5, "strcat(", $1->str, ", \"", $3->str, "\")"));
 							} else if($3->n == SVAL) {
 								$$ = addOpNode(SVAL, NULL, strcatN(5, "strcat(", $1->str, ", ", $3->str, ")"));
@@ -376,15 +366,7 @@ Operation
 								$$ = addOpNode(SVAL, NULL, strcatN(5, "strcat(", $1->str, ", \"", ($3->str == "TRUE")? "true" : "false", "\")"));
 							}
 						} else {
-							if($3->n == IVAL) {
-								$$ = addOpNode(BVAL, NULL, $1->str);
-							} else if($3->n == DVAL) {
-								$$ = addOpNode(BVAL, NULL, $1->str);
-							} else if($3->n == SVAL) {
-								$$ = addOpNode(BVAL, NULL, $1->str);
-							} else {
-								$$ = addOpNode(BVAL, NULL, $1->str);
-							}
+							$$ = addOpNode(BVAL, NULL, $1->str);
 						}
 					}
 		;
