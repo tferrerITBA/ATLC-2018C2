@@ -21,7 +21,7 @@
 	IntNode addIntNode(char * string, int n);
 	OpNode addOpNode(int type, char * baseId, char * intStr, char * dblStr, char * strStr, char * boolStr);
 	char * strcatN(int num, ...);
-	char * repeatStr(char * str, int count);
+	char * repeatStr(char * str, int count, int final);
 	char * strFromIntArithmOp(arithmOp op);
 	void freeResources();
 
@@ -87,7 +87,7 @@ FunctionPrototype
 						yyerror("Number of arguments must be integer");
 					}
 					insertFunction($1, atoi($3->str));
-					$$ = addNode(strcatN(4, "Var ", $1, "(", /*strcat(repeatStr("Var, ", $3 - 1), "Var"),*/ ");\n"));//FALTAN ARGS
+					$$ = addNode(strcatN(5, "Var ", $1, "(", repeatStr("Var, ", atoi($3->str), 2), ");\n"));//FALTAN ARGS
 				}
 		;
 
@@ -648,14 +648,16 @@ char * strcatN(int num, ...) {
   	return ret;
 }
 
-char * repeatStr(char * str, int count) {
+char * repeatStr(char * str, int count, int final) {
 	if(count == 0)
 		return NULL;
+	int auxCount = count;
 	char * ret = malloc(strlen(str) * count);
 	while(count > 0) {
 		strcat(ret, str);
 		count--;
 	}
+	ret[strlen(str) * auxCount - final] = '\0';
 	return ret;
 }
 
