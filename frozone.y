@@ -171,13 +171,13 @@ VarDeclaration
 				{
 					if(addVariable($1) == VAR_CREATED) {
 						if($3->n == IVAL) {
-							$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithInt(", $1, ", ", $3->str, ");\n"));
+							$$ = addNode(strcatN(5, "Var ", $1, " = newVarWithInt(", $3->str, ");\n"));
 						} else if($3->n == DVAL) {
-							$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithDbl(", $1, ", ", $3->str, ");\n"));
+							$$ = addNode(strcatN(5, "Var ", $1, " = newVarWithDbl(", $3->str, ");\n"));
 						} else if($3->n == SVAL) {
-							$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithStr(", $1, ", ", $3->str, ");\n"));
+							$$ = addNode(strcatN(5, "Var ", $1, " = newVarWithStr(", $3->str, ");\n"));
 						} else if($3->n == BVAL) {
-							$$ = addNode(strcatN(7, "Var ", $1, " = malloc(sizeof(VarCDT));\nvarWithBool(", $1, ", ", $3->str, ");\n"));
+							$$ = addNode(strcatN(5, "Var ", $1, " = newVarWithBool(", $3->str, ");\n"));
 						}
 					} else {
 						if($3->n == IVAL) {
@@ -393,11 +393,11 @@ Operation
 								}
 							} else if($1->n == SVAL) {
 								if($3->n == IVAL || $3->n == DVAL) {
-									$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcat(", $1->str, ", \"", $3->str, "\")"), NULL);
+									$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcatN(2, ", $1->str, ", \"", $3->str, "\")"), NULL);
 								} else if($3->n == SVAL) {
-									$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcat(", $1->str, ", ", $3->str, ")"), NULL);
+									$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcatN(2, ", $1->str, ", ", $3->str, ")"), NULL);
 								} else {
-									$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcat(", $1->str, ", \"", ($3->str == "TRUE")? "true" : "false", "\")"), NULL);
+									$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcatN(2, ", $1->str, ", \"", ($3->str == "TRUE")? "true" : "false", "\")"), NULL);
 								}
 							} else if($1->n == BVAL) {
 								$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, $1->str);
