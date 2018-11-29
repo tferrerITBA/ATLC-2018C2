@@ -9,7 +9,7 @@ typedef enum { FALSE = 0, TRUE } bool;
 typedef enum { PLUS, MINUS, MULT, DIV } arithmOp;
 typedef enum { EQ, LT, GT, LE, GE, NE } relationalOp;
 typedef enum { IVAL, DVAL, SVAL, BVAL, UNKNOWN } types;
-typedef enum { SUCCESS = 0, MAIN_DUP, FUNC_DUP, NOT_FOUND, ARGC_ERR } errors;
+typedef enum { SUCCESS = 0, MAIN_DUP, FUNC_DUP, NOT_FOUND, ARGC_ERR, MAIN_RET } errors;
 typedef enum { VAR_CREATED, VAR_MODIFIED } varStatus;
 
 typedef struct NodeCDT * Node;

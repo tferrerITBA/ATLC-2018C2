@@ -62,7 +62,7 @@
 
 Program
 		: HeaderSection GlobalFunctionList
-				{ $$ = addNode(strcatN(4, "typedef enum { FALSE = 0, TRUE } bool;\n", "typedef struct VarCDT {\n\tchar * str;\n\tint i;\n\tdouble d;\nbool b;\n}\ntypedef struct VarCDT * Var;\n\n", $1->str, $2->str)); fprintf(fp, "%s", $$->str); } // METER EN EL .H
+				{ $$ = addNode(strcatN(2, $1->str, $2->str)); fprintf(fp, "%s", $$->str); } // METER EN EL .H
 		;
 
 HeaderSection
@@ -103,9 +103,9 @@ GlobalFunctionList
 		;
 
 MainFunction
-		: MAIN_ID '(' ')' '{' FunctionBody ReturnStatement '}'
+		: MAIN_ID '(' ')' '{' FunctionBody '}'
 				{
-					$$ = addNode(strcatN(4, "int main() {\n", $5->str, $6->str, "}\n\n"));
+					$$ = addNode(strcatN(3, "int main() {\n", $5->str, "return 0;\n}\n\n"));
 				}
 		;
 
@@ -244,6 +244,10 @@ CycleStatement
 ReturnStatement
 		: RETURN IDENTIFIER
 				{
+					if(gscope->currentFunction == 0) {
+						yyerror("Main function cannot have return statement");
+						return MAIN_RET;
+					}
 					if(!foundVariable($2)) {
 						yyerror("Returned non-existent variable in function");
 						return NOT_FOUND;
@@ -252,6 +256,10 @@ ReturnStatement
 				}
 		| RETURN Literal
 				{
+					if(gscope->currentFunction == 0) {
+						yyerror("Main function cannot have return statement");
+						return MAIN_RET;
+					}
 					if($2->n == IVAL) {
 						$$ = addNode(strcatN(3, "return newVarWithInt(", $2->str, ");\n"));
 					} else if($2->n == DVAL) {
