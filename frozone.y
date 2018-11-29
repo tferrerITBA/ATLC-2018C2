@@ -21,7 +21,7 @@
 	IntNode addIntNode(char * string, int n);
 	OpNode addOpNode(int type, char * baseId, char * intStr, char * dblStr, char * strStr, char * boolStr);
 	char * strcatN(int num, ...);
-	char * repeatStr(char * str, int count);
+	char * repeatStr(char * str, int count, int final);
 	char * strFromIntArithmOp(arithmOp op);
 	void freeResources();
 
@@ -36,24 +36,25 @@
 	IntNode intnode;
 	OpNode opnode;
 	arithmOp aop;
+	relationalOp rop;
 }
 
 %token <sval> MAIN_ID
 %token <sval> FN_ID
 %token ON DO CYCLE
 %token <sval> IDENTIFIER
-%token OP_EQ OP_LT OP_GT OP_LE OP_GE OP_NE
 %token <sval> INT_LIT
 %token <sval> DBL_LIT
 %token <bval> BOOL_LIT
 %token <sval> STR_LIT
 %token <aop> ARITHM_OP
+%token <rop> REL_OP
 %token <sval> RETURN
 %token <sval> PRINT
 
 %type<node> Program HeaderSection FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration FunctionCall OnStatement CycleStatement ReturnStatement PrintStatement
 %type<intnode> FunctionArguments NonEmptyFunctionArguments FunctionCallArgs NonEmptyFunctionCallArgs Literal
-%type<opnode> Operation
+%type<opnode> Operation Condition
 
 %start Program
 
@@ -86,7 +87,7 @@ FunctionPrototype
 						yyerror("Number of arguments must be integer");
 					}
 					insertFunction($1, atoi($3->str));
-					$$ = addNode(strcatN(4, "Var ", $1, "(", /*strcat(repeatStr("Var, ", $3 - 1), "Var"),*/ ");\n"));//FALTAN ARGS
+					$$ = addNode(strcatN(5, "Var ", $1, "(", repeatStr("Var, ", atoi($3->str), 2), ");\n"));//FALTAN ARGS
 				}
 		;
 
@@ -102,9 +103,9 @@ GlobalFunctionList
 		;
 
 MainFunction
-		: MAIN_ID '(' ')' '{' FunctionBody ReturnStatement '}'
+		: MAIN_ID '(' ')' '{' FunctionBody '}'
 				{
-					$$ = addNode(strcatN(4, "int main() {\n", $5->str, $6->str, "}\n\n"));
+					$$ = addNode(strcatN(3, "int main() {\n", $5->str, "return 0;\n}\n\n"));
 				}
 		;
 
@@ -170,13 +171,13 @@ VarDeclaration
 				{
 					if(addVariable($1) == VAR_CREATED) {
 						if($3->n == IVAL) {
-							$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithInt(", $1, ", ", $3->str, ");\n"));
+							$$ = addNode(strcatN(5, "Var ", $1, " = newVarWithInt(", $3->str, ");\n"));
 						} else if($3->n == DVAL) {
-							$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithDbl(", $1, ", ", $3->str, ");\n"));
+							$$ = addNode(strcatN(5, "Var ", $1, " = newVarWithDbl(", $3->str, ");\n"));
 						} else if($3->n == SVAL) {
-							$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithStr(", $1, ", ", $3->str, ");\n"));
+							$$ = addNode(strcatN(5, "Var ", $1, " = newVarWithStr(", $3->str, ");\n"));
 						} else if($3->n == BVAL) {
-							$$ = addNode(strcatN(7, "Var ", $1, " = malloc(sizeof(VarCDT));\nvarWithBool(", $1, ", ", $3->str, ");\n"));
+							$$ = addNode(strcatN(5, "Var ", $1, " = newVarWithBool(", $3->str, ");\n"));
 						}
 					} else {
 						if($3->n == IVAL) {
@@ -236,13 +237,17 @@ OnStatement
 		;
 
 CycleStatement
-	: CYCLE '{' FunctionBody '}' ON '(' Condition ')'
+	: CYCLE '{' FunctionBody '}' ON Condition
 				{ $$ = addNode(strcatN(4, "do {", $3->str, "} while(", /*$7->str,*/ ")\n")); }
 	;
 
 ReturnStatement
 		: RETURN IDENTIFIER
 				{
+					if(gscope->currentFunction == 0) {
+						yyerror("Main function cannot have return statement");
+						return MAIN_RET;
+					}
 					if(!foundVariable($2)) {
 						yyerror("Returned non-existent variable in function");
 						return NOT_FOUND;
@@ -251,6 +256,10 @@ ReturnStatement
 				}
 		| RETURN Literal
 				{
+					if(gscope->currentFunction == 0) {
+						yyerror("Main function cannot have return statement");
+						return MAIN_RET;
+					}
 					if($2->n == IVAL) {
 						$$ = addNode(strcatN(3, "return newVarWithInt(", $2->str, ");\n"));
 					} else if($2->n == DVAL) {
@@ -384,11 +393,11 @@ Operation
 								}
 							} else if($1->n == SVAL) {
 								if($3->n == IVAL || $3->n == DVAL) {
-									$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcat(", $1->str, ", \"", $3->str, "\")"), NULL);
+									$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcatN(2, ", $1->str, ", \"", $3->str, "\")"), NULL);
 								} else if($3->n == SVAL) {
-									$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcat(", $1->str, ", ", $3->str, ")"), NULL);
+									$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcatN(2, ", $1->str, ", ", $3->str, ")"), NULL);
 								} else {
-									$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcat(", $1->str, ", \"", ($3->str == "TRUE")? "true" : "false", "\")"), NULL);
+									$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcatN(2, ", $1->str, ", \"", ($3->str == "TRUE")? "true" : "false", "\")"), NULL);
 								}
 							} else if($1->n == BVAL) {
 								$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, $1->str);
@@ -427,17 +436,75 @@ Literal
 		: INT_LIT		{ $$ = addIntNode($1, IVAL); }
 		| DBL_LIT		{ $$ = addIntNode($1, DVAL); }
 		| STR_LIT		{ $$ = addIntNode($1, SVAL); }
-		| BOOL_LIT		{ $$ = addIntNode(($1 == TRUE)? "TRUE" : "FALSE", BVAL); }
+		| BOOL_LIT		{ $$ = addIntNode(($1)? "TRUE" : "FALSE", BVAL); }
 		;
 
 Condition
-		: IDENTIFIER OP_EQ IDENTIFIER
-		| IDENTIFIER OP_LT IDENTIFIER
-		| IDENTIFIER OP_GT IDENTIFIER
-		| IDENTIFIER OP_LE IDENTIFIER
-		| IDENTIFIER OP_GE IDENTIFIER
-		| IDENTIFIER OP_NE IDENTIFIER
-		| IDENTIFIER
+		: /*'(' IDENTIFIER REL_OP IDENTIFIER ')'
+				{
+					if(!(variableInCurrentFunction($1) && variableInCurrentFunction($3))) { // && NOT GLOBAL VAR
+						return NOT_FOUND;
+					}
+					if($2 == EQ) {
+						$$ = addOpNode(UNKNOWN, $1, strcatN(5, "(", $1, "->i == ", $3, "->i)"), strcatN(7, "(fabs(", $1, "->d - ", $3, "->d) < ", EPSILON, ")"), strcatN(5, "(strcmp(", $1, "->str, ", $3, "->str) == 0)"), strcatN(5, "(", $1, "->b == ", $3, "->b)"));
+					} else {
+
+					}
+				}
+		| '(' IDENTIFIER REL_OP Literal ')'
+				{
+					if(!(variableInCurrentFunction($1))) { // && NOT GLOBAL VAR
+						return NOT_FOUND;
+					}
+					if($3->n == IVAL) {
+						if($2 == EQ) {
+							$$ = addOpNode(IVAL, $1, strcatN(5, "(", $1, "->i == ", $3->str, ")"), NULL, NULL, NULL);
+						}
+					} else if($3->n == DVAL) {
+						if($2 == EQ) {
+							$$ = addOpNode(DVAL, $1, NULL, strcatN(7, "(fabs(", $1, "->d, ", $3->str, ") < ", EPSILON, ")"), NULL, NULL);
+						}
+					} else if($3->n == SVAL) {
+						if($2 == EQ) {
+							$$ = addOpNode(SVAL, $1, NULL, NULL, strcatN(5, "(strcmp(", $1, "->str, \"", $3->str, "\") == 0)"), NULL);
+						}
+					} else if($3->n == BVAL) {
+						if($2 == EQ) {
+							$$ = addOpNode(BVAL, $1, NULL, NULL, NULL, strcatN(5, "(", $1, "->b == ", $3->str, ")"));
+						}
+					}
+				}
+		| '(' Literal REL_OP IDENTIFIER ')'
+				{
+					if(!(variableInCurrentFunction($3))) { // && NOT GLOBAL VAR
+						return NOT_FOUND;
+					}
+					if($1->n == IVAL) {
+						if($2 == EQ) {
+							$$ = addOpNode(IVAL, NULL, strcatN(5, "(", $1->str, " == ", $3, "->i)"), NULL, NULL, NULL);
+						}
+					} else if($1->n == DVAL) {
+						if($2 == EQ) {
+							$$ = addOpNode(DVAL, NULL, NULL, strcatN(7, "(fabs(", $1->str, ", ", $3, "->d) < ", EPSILON, ")"), NULL, NULL);
+						}
+					} else if($1->n == SVAL) {
+						if($2 == EQ) {
+							$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "(strcmp(\"", $1->str, "\", ", $3, "->str) == 0)"), NULL);
+						}
+					} else if($1->n == BVAL) {
+						if($2 == EQ) {
+							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(5, "(", $1->str, " == ", $3, "->b)"));
+						}
+					}
+				}
+		| */'(' IDENTIFIER ')'
+				{
+					$$ = addOpNode(BVAL, $2, NULL, NULL, NULL, strcatN(3, "(", $2, "->b)"));
+				}
+		| '(' Literal ')'
+				{
+					$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(3, "(", $2->str, ")"));
+				}
 		;
 
 FunctionCall
@@ -677,14 +744,16 @@ char * strcatN(int num, ...) {
   	return ret;
 }
 
-char * repeatStr(char * str, int count) {
+char * repeatStr(char * str, int count, int final) {
 	if(count == 0)
 		return NULL;
+	int auxCount = count;
 	char * ret = malloc(strlen(str) * count);
 	while(count > 0) {
 		strcat(ret, str);
 		count--;
 	}
+	ret[strlen(str) * auxCount - final] = '\0';
 	return ret;
 }
 
