@@ -566,8 +566,10 @@ int main(int argc, char *argv[])
 	fprintf(fp, "#include <stdlib.h> \n \
 #include <stdio.h> \n \
 #include <string.h> \n \
+#include <stdarg.h> \n \
 \n \
 #define MAX_STR_LENGTH 100 \n \
+#define STR_BLOCK 10 \n \
 \n \
 typedef enum { INT, DBL, STR, BOOL } type; \n \
 typedef enum { FALSE = 0 , TRUE } bool;\n\
@@ -575,7 +577,7 @@ typedef struct VarCDT * Var; \n \
 typedef struct VarCDT {\n \
 	int i;\n \
 	double d;\n \
-	char str[MAX_STR_LENGTH];\n \
+	char * str;\n \
 	bool b;\n \
 	type t;\n \
 } VarCDT;\n \
@@ -588,6 +590,7 @@ Var varWithInt(Var v, int num);\n \
 Var varWithDbl(Var v, double num);\n \
 Var varWithStr(Var v, char * string);\n \
 Var varWithBool(Var v, bool boolean);\n \
+char * strcatN(int num, ...);\n \
 \n \
 Var newVarWithInt(int num) {\n \
 	Var v = malloc(sizeof(VarCDT));\n \
@@ -653,6 +656,31 @@ Var varWithBool(Var v, bool boolean) {\n \
 	v->b = boolean;\n \
 	v->t = BOOL;\n \
 	return v;\n \
+} \n \
+\n \
+char * strcatN(int num, ...) { \n \
+	va_list valist; \n \
+	char * ret = NULL; \n \
+	int len = 0; \n \
+	int i; \n \
+  	va_start(valist, num); \n \
+  	for(i = 0; i < num; i++) { \n \
+    	char * param = va_arg(valist, char *); \n \
+    	if(param != NULL) { \n \
+      		while(*param != '\\0') { \n \
+        		if(len %% STR_BLOCK == 0) { \n \
+          			ret = realloc(ret, len + STR_BLOCK); \n \
+        		} \n \
+        		ret[len++] = *param++; \n \
+      		} \n \
+    	} \n \
+  	} \n \
+  	if(len %% STR_BLOCK == 0) { \n \
+    	ret = realloc(ret, len + 1); \n \
+  	} \n \
+  	ret[len] = '\\0'; \n \
+  	va_end(valist); \n \
+  	return ret; \n \
 } \n");
 
 	gscope = malloc(sizeof(GlobalCDT));

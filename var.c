@@ -1,8 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
 #define MAX_STR_LENGTH 100
+#define STR_BLOCK 10
 
 typedef enum { INT, DBL, STR, BOOL } type;
 
@@ -24,6 +26,7 @@ Var varWithInt(Var v, int num);
 Var varWithDbl(Var v, double num);
 Var varWithStr(Var v, char * string);
 Var varWithBool(Var v, bool boolean);
+char * strcatN(int num, ...);
 
 Var newVarWithInt(int num) {
 	Var v = malloc(sizeof(VarCDT));
@@ -89,4 +92,31 @@ Var varWithBool(Var v, bool boolean) {
 	v->b = boolean;
 	v->t = BOOL;
 	return v;
+}
+
+char * strcatN(int num, ...) {
+	va_list valist;
+	char * ret = NULL;
+	int len = 0;
+	int i;
+
+  	va_start(valist, num);
+  	for(i = 0; i < num; i++) {
+    	char * param = va_arg(valist, char *);
+    	if(param != NULL) {
+      		while(*param != '\0') {
+        		if(len % STR_BLOCK == 0) {
+          			ret = realloc(ret, len + STR_BLOCK);
+        		}
+        		ret[len++] = *param++;
+      		}
+    	}
+  	}
+  	if(len % STR_BLOCK == 0) {
+    	ret = realloc(ret, len + 1);
+  	}
+  	ret[len] = '\0';
+
+  	va_end(valist);
+  	return ret;
 }
