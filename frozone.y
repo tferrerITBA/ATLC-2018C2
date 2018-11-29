@@ -49,8 +49,9 @@
 %token <sval> STR_LIT
 %token <aop> ARITHM_OP
 %token <sval> RETURN
+%token <sval> PRINT
 
-%type<node> Program HeaderSection FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration FunctionCall OnStatement CycleStatement ReturnStatement
+%type<node> Program HeaderSection FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration FunctionCall OnStatement CycleStatement ReturnStatement PrintStatement
 %type<intnode> FunctionArguments NonEmptyFunctionArguments FunctionCallArgs NonEmptyFunctionCallArgs Literal
 %type<opnode> Operation
 
@@ -153,13 +154,15 @@ FunctionBody
 
 Statement
 		: VarDeclaration
-				{ $$ = addNode(strcatN(1, $1->str)); }
+				{ $$ = addNode($1->str); }
 		| OnStatement
-				{ $$ = addNode(strcatN(1, $1->str)); }
+				{ $$ = addNode($1->str); }
 		| CycleStatement
-				{ $$ = addNode(strcatN(1, $1->str)); }
+				{ $$ = addNode($1->str); }
 		| ReturnStatement
-				{ $$ = addNode(strcatN(1, $1->str)); }
+				{ $$ = addNode($1->str); }
+		| PrintStatement
+				{ $$ = addNode($1->str); }
 		;
 
 VarDeclaration
@@ -256,6 +259,28 @@ ReturnStatement
 						$$ = addNode(strcatN(3, "return newVarWithStr(", $2->str, ");\n"));
 					} else if($2->n == BVAL) {
 						$$ = addNode(strcatN(3, "return newVarWithBool(", $2->str, ");\n"));
+					}
+				}
+		;
+
+PrintStatement
+		: PRINT '(' IDENTIFIER ')'
+				{
+					if(!variableInCurrentFunction($3)) { // && NOT GLOBAL VAR
+						return NOT_FOUND;
+					}
+					$$ = addNode(strcatN(17, "if(", $3, "->t == INT) {\nprintf(\"%d\", ", $3, "->i);\n} else if(", $3, "->t == DBL) {\nprintf(\"%g\", ", $3, "->d);\n} else if(", $3, "->t == STR) {\nprintf(\"%s\", ", $3, "->str);\n} else if(", $3, "->t == BOOL) {\nprintf(\"%s\", (", $3, "->b)? \"true\" : \"false\");\n}\n"));
+				}
+		| PRINT '(' Literal ')'
+				{
+					if($3->n == IVAL) {
+						$$ = addNode(strcatN(3, "printf(\"%d\", ", $3->str, ");\n"));
+					} else if($3->n == DVAL) {
+						$$ = addNode(strcatN(3, "printf(\"%g\", ", $3->str, ");\n"));
+					} else if($3->n == SVAL) {
+						$$ = addNode(strcatN(3, "printf(\"%s\", ", $3->str, ");\n"));
+					} else if($3->n == BVAL) {
+						$$ = addNode(strcatN(3, "printf(\"%s\", (", $3->str, ")? \"true\" : \"false\");\n"));
 					}
 				}
 		;

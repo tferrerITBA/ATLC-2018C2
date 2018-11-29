@@ -73,6 +73,10 @@ frozone         {
                     yylval.sval = strdup(yytext);
                     return RETURN;
                 }
+"print"         {
+                    yylval.sval = strdup(yytext);
+                    return PRINT;
+                }
 
 {Double}         {
                     yylval.sval = strdup(yytext);;
