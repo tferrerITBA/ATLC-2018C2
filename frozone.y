@@ -687,7 +687,8 @@ char * strcatN(int num, ...) { \n \
   	ret[len] = '\\0'; \n \
   	va_end(valist); \n \
   	return ret; \n \
-} \n");
+} \n \
+\n");
 
 	gscope = malloc(sizeof(GlobalCDT));
 	gscope->functionIndex = 1;
