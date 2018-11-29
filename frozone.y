@@ -6,7 +6,7 @@
 	#include <stdarg.h>
 
 	#define TRUE 1
-  #define FALSE 0
+  	#define FALSE 0
 	#define MAX_INT_STR_LENGTH 24
 	#define MAX_DBL_STR_LENGTH 24
 	#define STR_BLOCK 10
@@ -19,22 +19,23 @@
 
 	Node addNode(char * string);
 	IntNode addIntNode(char * string, int n);
-	OpNode addOpNode(int type, char * baseId, char * string);
+	OpNode addOpNode(int type, char * baseId, char * intStr, char * dblStr, char * strStr, char * boolStr);
 	char * strcatN(int num, ...);
 	char * repeatStr(char * str, int count);
+	char * strFromIntArithmOp(arithmOp op);
 	void freeResources();
 
 	Global gscope;
 %}
 
 %union {
-	int ival;
 	double dval;
 	bool bval;
 	char * sval;
 	Node node;
 	IntNode intnode;
 	OpNode opnode;
+	arithmOp aop;
 }
 
 %token <sval> MAIN_ID
@@ -42,18 +43,16 @@
 %token ON DO CYCLE
 %token <sval> IDENTIFIER
 %token OP_EQ OP_LT OP_GT OP_LE OP_GE OP_NE
-%token <ival> INT_LIT
-%token <dval> DBL_LIT
+%token <sval> INT_LIT
+%token <sval> DBL_LIT
 %token <bval> BOOL_LIT
 %token <sval> STR_LIT
+%token <aop> ARITHM_OP
 %token <sval> RETURN
 
 %type<node> Program HeaderSection FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration FunctionCall OnStatement CycleStatement ReturnStatement
 %type<intnode> FunctionArguments NonEmptyFunctionArguments FunctionCallArgs NonEmptyFunctionCallArgs Literal
 %type<opnode> Operation
-
-%left '-' '+'
-%left '*' '/'
 
 %start Program
 
@@ -164,42 +163,6 @@ Statement
 		;
 
 VarDeclaration
-		/*: IDENTIFIER '=' INT_LIT
-				{
-					char int_str[MAX_INT_STR_LENGTH];
-          			sprintf(int_str, "%d", $3);
-					if(addVariable($1) == VAR_CREATED) {
-						$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithInt(", $1, ", ", int_str, ");\n"));
-					} else {
-						$$ = addNode(strcatN(5, "varWithInt(", $1, ", ", int_str, ");\n"));
-					}
-				}
-		| IDENTIFIER '=' DBL_LIT
-				{
-					char double_str[MAX_DBL_STR_LENGTH];
-          			sprintf(double_str, "%g", $3);
-					if(addVariable($1) == VAR_CREATED) {
-						$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithDbl(", $1, ", ", double_str, ");\n"));
-					} else {
-						$$ = addNode(strcatN(5, "varWithDbl(", $1, ", ", double_str, ");\n"));
-					}
-				}
-		| IDENTIFIER '=' STR_LIT
-				{
-					if(addVariable($1) == VAR_CREATED) {
-						$$ = addNode(strcatN(7, "Var ", $1," = malloc(sizeof(VarCDT));\nvarWithStr(", $1, ", ", $3, ");\n"));
-					} else {
-						$$ = addNode(strcatN(5, "varWithStr(", $1, ", ", $3, ");\n"));
-					}
-				}
-		| IDENTIFIER '=' BOOL_LIT
-				{
-					if(addVariable($1) == VAR_CREATED) {
-						$$ = addNode(strcatN(7, "Var ", $1, " = malloc(sizeof(VarCDT));\nvarWithBool(", $1, ", ", ($3 == TRUE)? "TRUE" : "FALSE", ");\n"));
-					} else {
-						$$ = addNode(strcatN(5, "varWithBool(", $1, ", ", ($3 == TRUE)? "TRUE" : "FALSE", ");\n"));
-					}
-				}*/
 		: IDENTIFIER '=' Literal
 				{
 					if(addVariable($1) == VAR_CREATED) {
@@ -234,17 +197,29 @@ VarDeclaration
 				}
 		| IDENTIFIER '=' Operation
 				{
-					if(!foundVariable($1)) {
-						yyerror("Returned non-existent variable in function");
-						return NOT_FOUND;
-					}
 					if(addVariable($1) == VAR_CREATED) {
-						$$ = addNode(strcatN(7, "Var ", $1, "->", ($3->type == IVAL)? "i" : ($3->type == DVAL)? "d" : ($3->type == SVAL)? "s" : ($3->type == BVAL)? "b" : strcatN(4, $1, "->(", $3->baseId, "->t)"), " = ", $3->str, ";\n"));
+						if($3->type == IVAL) {
+							$$ = addNode(strcatN(5, "Var ", $1, " = newVarWithInt(", $3->firstArgIntStr, ");\n"));
+						} else if($3->type == DVAL) {
+							$$ = addNode(strcatN(5, "Var ", $1, " = newVarWithDbl(", $3->firstArgDblStr, ");\n"));
+						} else if($3->type == SVAL) {
+							$$ = addNode(strcatN(5, "Var ", $1, " = newVarWithStr(", $3->firstArgStrStr, ");\n"));
+						} else if($3->type == BVAL) {
+							$$ = addNode(strcatN(5, "Var ", $1, " = newVarWithBool(", $3->firstArgBoolStr, ");\n"));
+						} else if($3->type == UNKNOWN) {
+							$$ = addNode(strcatN(23, "if(", $3->baseId, "->t == INT) {\nVar ", $1, " = newVarWithInt(", $3->firstArgIntStr, ");\n} else if(", $3->baseId, "->t == DBL) {\nVar ", $1, " = newVarWithDbl(", $3->firstArgDblStr, ");\n} else if(", $3->baseId, "->t == STR) {\nVar ", $1, " = newVarWithStr(", $3->firstArgStrStr, ");\n} else {\nVar ", $1, " = newVarWithBool(", $3->firstArgBoolStr, ");\n}\n"));
+						}
 					} else {
-						if($3->type != UNKNOWN) {
-							$$ = addNode(strcatN(6, $1, "->", ($3->type == IVAL)? "i" : ($3->type == DVAL)? "d" : ($3->type == SVAL)? "s" : "b", " = ", $3->str, ";\n"));
-						} else {
-							$$ = addNode(strcatN(17, "((", $3->baseId, "->t == INT)? ", $1, "->i : (", $3->baseId, "->t == DBL)? ", $1, "->d : (", $3->baseId, "->t == STR)? ", $1, "->str : ", $1, "->b) = ", $3->str, ";\n"));
+						if($3->type == IVAL) {
+							$$ = addNode(strcatN(4, $1, " = varWithInt(", $3->firstArgIntStr, ");\n"));
+						} else if($3->type == DVAL) {
+							$$ = addNode(strcatN(4, $1, " = varWithDbl(", $3->firstArgDblStr, ");\n"));
+						} else if($3->type == SVAL) {
+							$$ = addNode(strcatN(4, $1, " = varWithStr(", $3->firstArgStrStr, ");\n"));
+						} else if($3->type == BVAL) {
+							$$ = addNode(strcatN(4, $1, " = varWithBool(", $3->firstArgBoolStr, ");\n"));
+						} else if($3->type == UNKNOWN) {
+							$$ = addNode(strcatN(23, "if(", $3->baseId, "->t == INT) {\n", $1, " = varWithInt(", $3->firstArgIntStr, ");\n} else if(", $3->baseId, "->t == DBL) {\n", $1, " = varWithDbl(", $3->firstArgDblStr, ");\n} else if(", $3->baseId, "->t == STR) {\n", $1, " = varWithStr(", $3->firstArgStrStr, ");\n} else {\n", $1, " = varWithBool(", $3->firstArgBoolStr, ");\n}\n"));
 						}
 					}
 				}
@@ -270,27 +245,7 @@ ReturnStatement
 						return NOT_FOUND;
 					}
 					$$ = addNode(strcatN(3, "return ", $2, ";\n"));
-				}/*
-		| RETURN INT_LIT
-				{
-					char int_str[MAX_INT_STR_LENGTH];
-	          		sprintf(int_str, "%d", $2);
-					$$ = addNode(strcatN(5, "return newVarWithInt(", $1, ", ", int_str, ");\n"));
 				}
-		| RETURN DBL_LIT
-				{
-					char double_str[MAX_DBL_STR_LENGTH];
-	          		sprintf(double_str, "%g", $2);
-					$$ = addNode(strcatN(5, "return newVarWithDbl(", $1, ", ", double_str, ");\n"));
-				}
-		| RETURN STR_LIT
-				{
-					$$ = addNode(strcatN(5, "return newVarWithStr(", $1, ", ", $2, ");\n"));
-				}
-		| RETURN BOOL_LIT
-				{
-					$$ = addNode(strcatN(5, "return newVarWithBool(", $1, ", ", ($2 == TRUE)? "TRUE" : "FALSE", ");\n"));
-				}*/
 		| RETURN Literal
 				{
 					if($2->n == IVAL) {
@@ -306,92 +261,148 @@ ReturnStatement
 		;
 
 Operation
-		: IDENTIFIER '+' IDENTIFIER
+		: IDENTIFIER ARITHM_OP IDENTIFIER
 					{
 						if(!(variableInCurrentFunction($1) && variableInCurrentFunction($3))) { // && NOT GLOBAL VAR
 							return NOT_FOUND;
 						}
-						$$ = addOpNode(UNKNOWN, $1, strcatN(17, "switch(", $1, "->t) {\ncase INT: ", $1, "->i + ", $3, "->i;\nbreak;\ncase DBL: ", $1, "->d + ", $3, "->d;\nbreak;\ncase STR: strcat(", $1, "->str, ", $3, "->str);\nbreak;\ncase BOOL: ", $1, "->b\nbreak;\n}\n"));
+						if($2 == PLUS) {
+							$$ = addOpNode(UNKNOWN, $1, strcatN(4, $1, "->i + ", $3, "->i"), strcatN(4, $1, "->d + ", $3, "->d"), strcatN(5, "strcat(", $1, "->str, ", $3, "->str)"), strcatN(2, $1, "->b"));
+						} else {
+							$$ = addOpNode(UNKNOWN, $1, strcatN(6, $1, "->i ", strFromIntArithmOp($2), " ", $3, "->i"), strcatN(6, $1, "->d ", strFromIntArithmOp($2), " ", $3, "->d"), strcatN(2, $1, "->str"), strcatN(2, $1, "->b"));
+						}
 					}
-		| IDENTIFIER '+' Literal
+		| IDENTIFIER ARITHM_OP Literal
 					{
 						if(!variableInCurrentFunction($1)) { // && NOT GLOBAL VAR
 							return NOT_FOUND;
 						}
 						if($3->n == IVAL || $3->n == DVAL) {
-							$$ = addOpNode(UNKNOWN, $1, strcatN(17, "switch(", $1, "->t) {\ncase INT: ", $1, "->i + ", $3->str, ";\nbreak;\ncase DBL: ", $1, "->d + ", $3->str, ";\nbreak;\ncase STR: strcat(", $1, "->str, \"", $3->str, "\");\nbreak;\ncase BOOL: ", $1, "->b\nbreak;\n}\n"));
+							if($2 == PLUS) {
+								$$ = addOpNode(UNKNOWN, $1, strcatN(3, $1, "->i + ", $3->str), strcatN(3, $1, "->d + ", $3->str), strcatN(5, "strcat(", $1, "->str, \"", $3->str, "\")"), strcatN(2, $1, "->b"));
+							} else {
+								$$ = addOpNode(UNKNOWN, $1, strcatN(5, $1, "->i ", strFromIntArithmOp($2), " ", $3->str), strcatN(5, $1, "->d ", strFromIntArithmOp($2), " ", $3->str), strcatN(2, $1, "->str"), strcatN(2, $1, "->b"));
+							}
 						} else if($3->n == SVAL) {
-							$$ = addOpNode(UNKNOWN, $1, strcatN(13, "switch(", $1, "->t) {\ncase INT: ", $1, "->i;\nbreak;\ncase DBL: ", $1, "->d;\nbreak;\ncase STR: strcat(", $1, "->str, ", $3->str, ");\nbreak;\ncase BOOL: ", $1, "->b\nbreak;\n}\n"));
-						} else {
-							$$ = addOpNode(UNKNOWN, $1, strcatN(11, "switch(", $1, "->t) {\ncase INT: ", $1, "->i;\nbreak;\ncase DBL: ", $1, "->d;\nbreak;\ncase STR: ", $1, "->str;\nbreak;\ncase BOOL: ", $1, "->b\nbreak;\n}\n"));
+							if($2 == PLUS) {
+								$$ = addOpNode(UNKNOWN, $1, strcatN(2, $1, "->i"), strcatN(2, $1, "->d"), strcatN(5, "strcat(", $1, "->str, ", $3->str, ")"), strcatN(2, $1, "->b"));
+							} else {
+								$$ = addOpNode(UNKNOWN, $1, strcatN(2, $1, "->i"), strcatN(2, $1, "->d"), strcatN(2, $1, "->str"), strcatN(2, $1, "->b"));
+							}
+						} else if($3->n == BVAL) {
+							$$ = addOpNode(UNKNOWN, $1, strcatN(2, $1, "->i"), strcatN(2, $1, "->d"), strcatN(2, $1, "->str"), strcatN(2, $1, "->b"));
 						}
 					}
-		| Literal '+' IDENTIFIER
+		| Literal ARITHM_OP IDENTIFIER
 					{
 						if(!variableInCurrentFunction($3)) { // && NOT GLOBAL VAR
 							return NOT_FOUND;
 						}
-						if($1->n == IVAL) {
-							$$ = addOpNode(IVAL, NULL, strcatN(4, $1->str, " + ", $3, "->i"));
-						} else if($1->n == DVAL) {
-							$$ = addOpNode(DVAL, NULL, strcatN(4, $1->str, " + ", $3, "->d"));
-						} else if($1->n == SVAL) {
-							$$ = addOpNode(SVAL, NULL, strcatN(5, "strcat(", $1->str, ", ", $3, "->str)"));
-						} else {
-							$$ = addOpNode(BVAL, NULL, $1->str);
+						if($2 == PLUS) {
+							if($1->n == IVAL) {
+								$$ = addOpNode(IVAL, NULL, strcatN(4, $1->str, " + ", $3, "->i"), NULL, NULL, NULL);
+							} else if($1->n == DVAL) {
+								$$ = addOpNode(DVAL, NULL, NULL, strcatN(4, $1->str, " + ", $3, "->d"), NULL, NULL);
+							} else if($1->n == SVAL) {
+								$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcat(", $1->str, ", ", $3, "->str)"), NULL);
+							} else {
+								$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, $1->str);
+							}
+						} else if($2 == MINUS) {
+							if($1->n == IVAL) {
+								$$ = addOpNode(IVAL, NULL, strcatN(4, $1->str, " - ", $3, "->i"), NULL, NULL, NULL);
+							} else if($1->n == DVAL) {
+								$$ = addOpNode(DVAL, NULL, NULL, strcatN(4, $1->str, " - ", $3, "->d"), NULL, NULL);
+							} else if($1->n == SVAL) {
+								$$ = addOpNode(SVAL, NULL, NULL, NULL, $1->str, NULL);
+							} else {
+								$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, $1->str);
+							}
+						} else if($2 == MULT) {
+							if($1->n == IVAL) {
+								$$ = addOpNode(IVAL, NULL, strcatN(4, $1->str, " * ", $3, "->i"), NULL, NULL, NULL);
+							} else if($1->n == DVAL) {
+								$$ = addOpNode(DVAL, NULL, NULL, strcatN(4, $1->str, " * ", $3, "->d"), NULL, NULL);
+							} else if($1->n == SVAL) {
+								$$ = addOpNode(SVAL, NULL, NULL, NULL, $1->str, NULL);
+							} else {
+								$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, $1->str);
+							}
+						} else if($2 == DIV) {
+							if($1->n == IVAL) {
+								$$ = addOpNode(IVAL, NULL, strcatN(4, $1->str, " / ", $3, "->i"), NULL, NULL, NULL);
+							} else if($1->n == DVAL) {
+								$$ = addOpNode(DVAL, NULL, NULL, strcatN(4, $1->str, " / ", $3, "->d"), NULL, NULL);
+							} else if($1->n == SVAL) {
+								$$ = addOpNode(SVAL, NULL, NULL, NULL, $1->str, NULL);
+							} else {
+								$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, $1->str);
+							}
 						}
 					}
-		| Literal '+' Literal
+		| Literal ARITHM_OP Literal
 					{
-						if($1->n == IVAL) {
-							if($3->n == IVAL) {
-								$$ = addOpNode(IVAL, NULL, strcatN(3, $1->str, " + ", $3->str));
-							} else if($3->n == DVAL) {
-								$$ = addOpNode(IVAL, NULL, strcatN(3, $1->str, " + (int)", $3->str));
-							} else {
-								$$ = addOpNode(IVAL, NULL, $1->str);
-							}
-						} else if($1->n == DVAL) {
-							if($3->n == IVAL || $3->n == DVAL) {
-								$$ = addOpNode(DVAL, NULL, strcatN(3, $1->str, " + ", $3->str));
-							} else {
-								$$ = addOpNode(DVAL, NULL, $1->str);
-							}
-						} else if($1->n == SVAL) {
-							if($3->n == IVAL || $3->n == DVAL) {
-								$$ = addOpNode(SVAL, NULL, strcatN(5, "strcat(", $1->str, ", \"", $3->str, "\")"));
-							} else if($3->n == SVAL) {
-								$$ = addOpNode(SVAL, NULL, strcatN(5, "strcat(", $1->str, ", ", $3->str, ")"));
-							} else {
-								$$ = addOpNode(SVAL, NULL, strcatN(5, "strcat(", $1->str, ", \"", ($3->str == "TRUE")? "true" : "false", "\")"));
+						if($2 == PLUS) {
+							if($1->n == IVAL) {
+								if($3->n == IVAL) {
+									$$ = addOpNode(IVAL, NULL, strcatN(3, $1->str, " + ", $3->str), NULL, NULL, NULL);
+								} else if($3->n == DVAL) {
+									$$ = addOpNode(IVAL, NULL, strcatN(3, $1->str, " + (int)", $3->str), NULL, NULL, NULL);
+								} else {
+									$$ = addOpNode(IVAL, NULL, $1->str, NULL, NULL, NULL);
+								}
+							} else if($1->n == DVAL) {
+								if($3->n == IVAL || $3->n == DVAL) {
+									$$ = addOpNode(DVAL, NULL, NULL, strcatN(3, $1->str, " + ", $3->str), NULL, NULL);
+								} else {
+									$$ = addOpNode(DVAL, NULL, NULL, $1->str, NULL, NULL);
+								}
+							} else if($1->n == SVAL) {
+								if($3->n == IVAL || $3->n == DVAL) {
+									$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcat(", $1->str, ", \"", $3->str, "\")"), NULL);
+								} else if($3->n == SVAL) {
+									$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcat(", $1->str, ", ", $3->str, ")"), NULL);
+								} else {
+									$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "strcat(", $1->str, ", \"", ($3->str == "TRUE")? "true" : "false", "\")"), NULL);
+								}
+							} else if($1->n == BVAL) {
+								$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, $1->str);
 							}
 						} else {
-							$$ = addOpNode(BVAL, NULL, $1->str);
+							if($1->n == IVAL) {
+								if($3->n == IVAL) {
+									$$ = addOpNode(IVAL, NULL, strcatN(3, $1->str, strFromIntArithmOp($2), $3->str), NULL, NULL, NULL);
+								} else if($3->n == DVAL) {
+									$$ = addOpNode(IVAL, NULL, strcatN(4, $1->str, strFromIntArithmOp($2), "(int)", $3->str), NULL, NULL, NULL);
+								} else {
+									$$ = addOpNode(IVAL, NULL, $1->str, NULL, NULL, NULL);
+								}
+							} else if($1->n == DVAL) {
+								if($3->n == IVAL || $3->n == DVAL) {
+									$$ = addOpNode(DVAL, NULL, NULL, strcatN(3, $1->str, strFromIntArithmOp($2), $3->str), NULL, NULL);
+								} else {
+									$$ = addOpNode(DVAL, NULL, NULL, $1->str, NULL, NULL);
+								}
+							} else if($1->n == SVAL) {
+								if($3->n == IVAL || $3->n == DVAL) {
+									$$ = addOpNode(SVAL, NULL, NULL, NULL, $1->str, NULL);
+								} else if($3->n == SVAL) {
+									$$ = addOpNode(SVAL, NULL, NULL, NULL, $1->str, NULL);
+								} else {
+									$$ = addOpNode(SVAL, NULL, NULL, NULL, $1->str, NULL);
+								}
+							} else if($1->n == BVAL) {
+								$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, $1->str);
+							}
 						}
 					}
 		;
 
 Literal
-		: INT_LIT
-				{
-					char int_str[MAX_INT_STR_LENGTH];
-          			sprintf(int_str, "%d", $1);
-          			$$ = addIntNode(int_str, IVAL);
-          		}
-		| DBL_LIT
-				{
-					char double_str[MAX_DBL_STR_LENGTH];
-          			sprintf(double_str, "%g", $1);
-          			$$ = addIntNode(double_str, DVAL);
-          		}
-		| STR_LIT
-				{
-					$$ = addIntNode($1, SVAL);
-				}
-		| BOOL_LIT
-				{
-					$$ = addIntNode(($1 == TRUE)? "TRUE" : "FALSE", BVAL);
-				}
+		: INT_LIT		{ $$ = addIntNode($1, IVAL); }
+		| DBL_LIT		{ $$ = addIntNode($1, DVAL); }
+		| STR_LIT		{ $$ = addIntNode($1, SVAL); }
+		| BOOL_LIT		{ $$ = addIntNode(($1 == TRUE)? "TRUE" : "FALSE", BVAL); }
 		;
 
 Condition
@@ -401,6 +412,7 @@ Condition
 		| IDENTIFIER OP_LE IDENTIFIER
 		| IDENTIFIER OP_GE IDENTIFIER
 		| IDENTIFIER OP_NE IDENTIFIER
+		| IDENTIFIER
 		;
 
 FunctionCall
@@ -514,11 +526,14 @@ IntNode addIntNode(char * string, int n) {
 	return newNode;
 }
 
-OpNode addOpNode(int type, char * baseId, char * string) {
+OpNode addOpNode(int type, char * baseId, char * intStr, char * dblStr, char * strStr, char * boolStr) {
 	OpNode newNode = malloc(sizeof(OpNodeCDT));
 	newNode->type = type;
 	newNode->baseId = baseId;
-	newNode->str = string;
+	newNode->firstArgIntStr = intStr;
+	newNode->firstArgDblStr = dblStr;
+	newNode->firstArgStrStr = strStr;
+	newNode->firstArgBoolStr = boolStr;
 	return newNode;
 }
 
@@ -558,6 +573,18 @@ char * repeatStr(char * str, int count) {
 		count--;
 	}
 	return ret;
+}
+
+char * strFromIntArithmOp(arithmOp op) {
+	if(op == PLUS) {
+		return " + ";
+	} else if(op == MINUS) {
+		return " - ";
+	} else if(op == MULT) {
+		return " * ";
+	} else if(op == DIV) {
+		return " / ";
+	}
 }
 
 void freeResources() {

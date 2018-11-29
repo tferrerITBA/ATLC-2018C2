@@ -1,3 +1,9 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+#define MAX_STR_LENGTH 100
+
 typedef enum { INT, DBL, STR, BOOL } type;
 
 typedef struct VarCDT * Var;
@@ -8,7 +14,16 @@ typedef struct VarCDT {
 	char str[MAX_STR_LENGTH];
 	bool b;
 	type t;
-}
+} VarCDT;
+
+Var newVarWithInt(int num);
+Var newVarWithDbl(double num);
+Var newVarWithStr(char * string);
+Var newVarWithBool(bool boolean);
+Var varWithInt(Var v, int num);
+Var varWithDbl(Var v, double num);
+Var varWithStr(Var v, char * string);
+Var varWithBool(Var v, bool boolean);
 
 Var newVarWithInt(int num) {
 	Var v = malloc(sizeof(VarCDT));
@@ -16,7 +31,7 @@ Var newVarWithInt(int num) {
 }
 
 Var newVarWithDbl(double num) {
-	v->i = (int) num;
+	Var v = malloc(sizeof(VarCDT));
 	return varWithDbl(v, num);
 }
 

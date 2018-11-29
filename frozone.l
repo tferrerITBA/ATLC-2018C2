@@ -9,7 +9,7 @@
 %}
 
 Separator   [\(\)\{\}\[\]\;\,\.]
-Delimiter   [\=\>\<\!\~\?\:\+\-\*\/\&\|\^\%]
+Delimiter   [\=\>\<\!\~\?\:\&\|\^\%]
 Escape      [\\]([r]|[n]|[b]|[f]|[t]|[\\]|[\']|[\"])
 Digit       [0-9]
 Letter      [a-zA-Z_]
@@ -53,14 +53,34 @@ frozone         {
                     yylval.bval = FALSE;
                     return BOOL_LIT;
                 }
+"+"             {
+                    yylval.aop = PLUS;
+                    return ARITHM_OP;
+                }
+"-"             {
+                    yylval.aop = MINUS;
+                    return ARITHM_OP;
+                }
+"*"             {
+                    yylval.aop = MULT;
+                    return ARITHM_OP;
+                }
+"/"             {
+                    yylval.aop = DIV;
+                    return ARITHM_OP;
+                }
 "return"        {
                     yylval.sval = strdup(yytext);
                     return RETURN;
                 }
 
 {Double}         {
-                    yylval.dval = atof(yytext);
+                    yylval.sval = strdup(yytext);;
                     return DBL_LIT;
+                }
+{Integer}       {
+                    yylval.sval = strdup(yytext);
+                    return INT_LIT;
                 }
 {Separator}     { return yytext[0]; }
 {Delimiter}     { return yytext[0]; }
@@ -80,10 +100,6 @@ frozone         {
 {Identifier}    {
                     yylval.sval = strdup(yytext);
                     return IDENTIFIER;
-                }
-{Integer}       {
-                    yylval.ival = atoi(yytext);
-                    return INT_LIT;
                 }
 
 {BLANK}         {}
