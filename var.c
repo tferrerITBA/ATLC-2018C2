@@ -11,7 +11,7 @@ typedef struct VarCDT * Var;
 typedef struct VarCDT {
 	int i;
 	double d;
-	char str[MAX_STR_LENGTH];
+	char * str;
 	bool b;
 	type t;
 } VarCDT;
@@ -27,21 +27,25 @@ Var varWithBool(Var v, bool boolean);
 
 Var newVarWithInt(int num) {
 	Var v = malloc(sizeof(VarCDT));
+	v->str = malloc(MAX_STR_LENGTH);
 	return varWithInt(v, num);
 }
 
 Var newVarWithDbl(double num) {
 	Var v = malloc(sizeof(VarCDT));
+	v->str = malloc(MAX_STR_LENGTH);
 	return varWithDbl(v, num);
 }
 
 Var newVarWithStr(char * string) {
 	Var v = malloc(sizeof(VarCDT));
+	v->str = malloc(MAX_STR_LENGTH);
 	return varWithStr(v, string);
 }
 
 Var newVarWithBool(bool boolean) {
 	Var v = malloc(sizeof(VarCDT));
+	v->str = malloc(MAX_STR_LENGTH);
 	return varWithBool(v, boolean);
 }
 
