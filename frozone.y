@@ -23,6 +23,7 @@
 	char * strcatN(int num, ...);
 	char * repeatStr(char * str, int count, int final);
 	char * strFromIntArithmOp(arithmOp op);
+	int string_ends_with(const char * str, const char * suffix);
 	void freeResources();
 
 	Global gscope;
@@ -553,6 +554,11 @@ int main(int argc, char *argv[])
 	if(argc > 1) {
 		FILE *file;
 
+		if (!string_ends_with(argv[1],".f")){
+			fprintf(stderr, "could not Compile a not frozone file %s\n", argv[1]);
+			return 1;
+		}
+
 		file = fopen(argv[1], "r");
 		if(!file) {
 			fprintf(stderr, "could not open %s\n", argv[1]);
@@ -787,4 +793,14 @@ void freeResources() {
     	free(gscope->functions[i]);
     }
     free(gscope);
+}
+
+int string_ends_with(const char * str, const char * suffix)
+{
+  int str_len = strlen(str);
+  int suffix_len = strlen(suffix);
+
+  return
+    (str_len >= suffix_len) &&
+    (0 == strcmp(str + (str_len-suffix_len), suffix));
 }
