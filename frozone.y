@@ -6,15 +6,13 @@
 	#include <stdarg.h>
 
 	#define TRUE 1
-  #define FALSE 0
+  	#define FALSE 0
 
 	extern FILE *yyin;
 	extern char * yytext;
 	FILE * fp;
 
 	int yylex();
-
-	char * strFromIntRelOp(relationalOp op);
 
 	Global gscope;
 %}
@@ -771,6 +769,7 @@ char * strcatN(int num, ...) { \n \
     fclose(yyin);
     return 0;
 }
+<<<<<<< HEAD
 
 char * strFromIntRelOp(relationalOp op) {
 	if(op == EQ) {
@@ -783,3 +782,5 @@ char * strFromIntRelOp(relationalOp op) {
 		return " != ";
 	}
 }
+=======
+>>>>>>> 467129dfb55020dd1322e46233b61c90eac0649a

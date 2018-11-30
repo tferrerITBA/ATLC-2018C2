@@ -242,6 +242,26 @@ char * strFromIntArithmOp(arithmOp op) {
 	}
 }
 
+char * strFromIntRelOp(relationalOp op) {
+	if(op == EQ) {
+		return " == ";
+	} else if(op == LT) {
+		return " < ";
+	} else if(op == GT) {
+		return " > ";
+	} else if(op == NE) {
+		return " != ";
+	}
+}
+
+char * strFromIntLogOp(logicalOp op) {
+	if(op == AND) {
+		return " && ";
+	} else if(op == OR) {
+		return " || ";
+	}
+}
+
 void freeResources() {
 	int i;
     for(i = 0; i < gscope->variableIndex; i++) {
@@ -265,12 +285,4 @@ int string_ends_with(const char * str, const char * suffix)
   return
     (str_len >= suffix_len) &&
     (0 == strcmp(str + (str_len-suffix_len), suffix));
-}
-
-char * strFromIntLogOp(logicalOp op) {
-	if(op == AND) {
-		return " && ";
-	} else if(op == OR) {
-		return " || ";
-	}
 }
