@@ -225,7 +225,7 @@ VarDeclaration
 					if(addVariable($1) == VAR_CREATED) {
 						$$ = addNode(strcatN(5, "Var ", $1, " = newVarWithBool(", $3->firstArgBoolStr, ");\n"));
 					} else {
-						$$ = addNode(strcatN(6, $1, " = varWithBool(", $1, ", ", $3->firstArgBoolStr, ");\n"));						
+						$$ = addNode(strcatN(6, $1, " = varWithBool(", $1, ", ", $3->firstArgBoolStr, ");\n"));
 					}
 				}
 		;
@@ -718,11 +718,11 @@ Var varWithBool(Var v, bool boolean) {\n \
 	if(boolean) {\n \
 		v->i = 1;\n \
 		v->d = 1.0;\n \
-		v->str = \"true\";\n \
+		sprintf(v->str, \"true\");\n \
 	} else {\n \
 		v->i = 0;\n \
 		v->d = 0.0;\n \
-		v->str = \"false\";\n \
+		sprintf(v->str, \"false\");\n \
 	}\n \
 	v->b = boolean;\n \
 	v->t = BOOL;\n \

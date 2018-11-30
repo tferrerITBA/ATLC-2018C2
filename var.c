@@ -83,11 +83,11 @@ Var varWithBool(Var v, bool boolean) {
 	if(boolean) {
 		v->i = 1;
 		v->d = 1.0;
-		v->str = "true";
+		sprintf(v->str, "true");
 	} else {
 		v->i = 0;
 		v->d = 0.0;
-		v->str = "false";
+		sprintf(v->str, "false");
 	}
 	v->b = boolean;
 	v->t = BOOL;
