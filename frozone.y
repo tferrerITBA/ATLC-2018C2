@@ -229,8 +229,14 @@ VarDeclaration
 						}
 					}
 				}
-		//| IDENTIFIER '=' '(' Condition ')'
-		//		{ $$ = addNode()}
+		| IDENTIFIER '=' Condition
+				{
+					if(addVariable($1) == VAR_CREATED) {
+						$$ = addNode(strcatN(5, "Var ", $1, " = newVarWithBool(", $3->firstArgBoolStr, ");\n"));
+					} else {
+						$$ = addNode(strcatN(6, $1, " = varWithBool(", $1, ", ", $3->firstArgBoolStr, ");\n"));						
+					}
+				}
 		;
 
 OnStatement
@@ -519,6 +525,12 @@ Condition
 						$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, $2->str);
 					}
 				}
+		| '(' Condition LOG_OP Condition ')'
+		| '(' Condition LOG_OP IDENTIFIER ')'
+		| '(' IDENTIFIER LOG_OP Condition ')'
+		| '(' IDENTIFIER LOG_OP IDENTIFIER ')'
+		| '(' NOT Condition ')'
+		| '(' NOT IDENTIFIER ')'
 		;
 
 FunctionCall

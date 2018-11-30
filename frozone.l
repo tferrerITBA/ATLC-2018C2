@@ -51,14 +51,6 @@ frozone         {
                     yylval.rop = GT;
                     return REL_OP;
                 }
-"le"            {
-                    yylval.rop = LE;
-                    return REL_OP;
-                }
-"ge"            {
-                    yylval.rop = GE;
-                    return REL_OP;
-                }
 "ne"            {
                     yylval.rop = NE;
                     return REL_OP;
