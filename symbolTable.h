@@ -5,6 +5,10 @@
 #define FROZONE "frozone"
 #define EPSILON "0.00001"
 
+#define MAX_INT_STR_LENGTH 24
+#define MAX_DBL_STR_LENGTH 24
+#define STR_BLOCK 10
+
 typedef enum { FALSE = 0, TRUE } bool;
 typedef enum { PLUS, MINUS, MULT, DIV } arithmOp;
 typedef enum { EQ, LT, GT, NE } relationalOp;
@@ -77,3 +81,13 @@ Function getFunction(char * name);
 int variableInCurrentFunction(char * name);
 void addNewVariable(char * name);
 char * strFromIntLogOp(logicalOp op);
+
+
+Node addNode(char * string);
+IntNode addIntNode(char * string, int n);
+OpNode addOpNode(int type, char * baseId, char * intStr, char * dblStr, char * strStr, char * boolStr);
+char * strcatN(int num, ...);
+char * repeatStr(char * str, int count, int final);
+char * strFromIntArithmOp(arithmOp op);
+int string_ends_with(const char * str, const char * suffix);
+void freeResources();
