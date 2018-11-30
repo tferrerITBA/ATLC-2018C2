@@ -80,6 +80,8 @@ int ArgcMatchesPrototype(char * name, int argc);
 Function getFunction(char * name);
 int variableInCurrentFunction(char * name);
 void addNewVariable(char * name);
+char * strFromIntArithmOp(arithmOp op);
+char * strFromIntRelOp(relationalOp op);
 char * strFromIntLogOp(logicalOp op);
 
 
@@ -88,6 +90,5 @@ IntNode addIntNode(char * string, int n);
 OpNode addOpNode(int type, char * baseId, char * intStr, char * dblStr, char * strStr, char * boolStr);
 char * strcatN(int num, ...);
 char * repeatStr(char * str, int count, int final);
-char * strFromIntArithmOp(arithmOp op);
 int string_ends_with(const char * str, const char * suffix);
 void freeResources();
