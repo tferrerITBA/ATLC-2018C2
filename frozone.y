@@ -769,18 +769,3 @@ char * strcatN(int num, ...) { \n \
     fclose(yyin);
     return 0;
 }
-<<<<<<< HEAD
-
-char * strFromIntRelOp(relationalOp op) {
-	if(op == EQ) {
-		return " == ";
-	} else if(op == LT) {
-		return " < ";
-	} else if(op == GT) {
-		return " > ";
-	} else if(op == NE) {
-		return " != ";
-	}
-}
-=======
->>>>>>> 467129dfb55020dd1322e46233b61c90eac0649a
