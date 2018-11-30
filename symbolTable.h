@@ -8,6 +8,7 @@
 typedef enum { FALSE = 0, TRUE } bool;
 typedef enum { PLUS, MINUS, MULT, DIV } arithmOp;
 typedef enum { EQ, LT, GT, NE } relationalOp;
+typedef enum { AND, OR, NOT } logicalOp;
 typedef enum { IVAL, DVAL, SVAL, BVAL, UNKNOWN } types;
 typedef enum { SUCCESS = 0, MAIN_DUP, FUNC_DUP, NOT_FOUND, ARGC_ERR, MAIN_RET } errors;
 typedef enum { VAR_CREATED, VAR_MODIFIED } varStatus;
@@ -75,3 +76,4 @@ int ArgcMatchesPrototype(char * name, int argc);
 Function getFunction(char * name);
 int variableInCurrentFunction(char * name);
 void addNewVariable(char * name);
+char * strFromIntLogOp(logicalOp op);

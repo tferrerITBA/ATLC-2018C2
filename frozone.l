@@ -55,6 +55,18 @@ frozone         {
                     yylval.rop = NE;
                     return REL_OP;
                 }
+"and"           {
+                    yylval.logop = AND;
+                    return LOG_OP;
+                }
+"or"            {
+                    yylval.logop = OR;
+                    return LOG_OP;
+                }
+"not"           {
+                    yylval.logop = NOT;
+                    return LOG_OP;
+                }
 "true"          {
                     yylval.bval = TRUE;
                     return BOOL_LIT;

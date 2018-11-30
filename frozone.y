@@ -39,6 +39,7 @@
 	OpNode opnode;
 	arithmOp aop;
 	relationalOp rop;
+	logicalOp logop;
 }
 
 %token <sval> MAIN_ID
@@ -51,6 +52,7 @@
 %token <sval> STR_LIT
 %token <aop> ARITHM_OP
 %token <rop> REL_OP
+%token <logop> LOG_OP
 %token <sval> RETURN
 %token <sval> PRINT
 
@@ -511,7 +513,7 @@ Condition
 					if(!(variableInCurrentFunction($2))) { // && NOT GLOBAL VAR
 						return NOT_FOUND;
 					}
-					$$ = addOpNode(BVAL, $2, NULL, NULL, NULL, strcatN(2, $2, "->b"));
+					$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(2, $2, "->b"));
 				}
 		| '(' Literal ')'
 				{
@@ -526,11 +528,59 @@ Condition
 					}
 				}
 		| '(' Condition LOG_OP Condition ')'
+				{
+					if($3 == NOT) {
+						yyerror("\"Not\" operator is not binary");
+					}
+					$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(7, "(", $2->firstArgBoolStr, ")", strFromIntLogOp($3), "(", $4->firstArgBoolStr, ")"));
+				}
 		| '(' Condition LOG_OP IDENTIFIER ')'
+				{
+					if(!(variableInCurrentFunction($4))) { // && NOT GLOBAL VAR
+						return NOT_FOUND;
+					}
+					if($3 == NOT) {
+						yyerror("\"Not\" operator is not binary");
+					}
+					$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(6, "(", $2->firstArgBoolStr, ")", strFromIntLogOp($3), $4, "->b"));
+				}
 		| '(' IDENTIFIER LOG_OP Condition ')'
+				{
+					if(!(variableInCurrentFunction($2))) { // && NOT GLOBAL VAR
+						return NOT_FOUND;
+					}
+					if($3 == NOT) {
+						yyerror("\"Not\" operator is not binary");
+					}
+					$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(6, $2, "->b", strFromIntLogOp($3), "(", $4->firstArgBoolStr, ")"));
+				}
 		| '(' IDENTIFIER LOG_OP IDENTIFIER ')'
-		| '(' NOT Condition ')'
-		| '(' NOT IDENTIFIER ')'
+				{
+					if(!(variableInCurrentFunction($2) && variableInCurrentFunction($4))) { // && NOT GLOBAL VAR
+						return NOT_FOUND;
+					}
+					if($3 == NOT) {
+						yyerror("\"Not\" operator is not binary");
+					}
+					$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(5, $2, "->b", strFromIntLogOp($3), $4, "->b"));
+				}
+		| '(' LOG_OP Condition ')'
+				{
+					if($2 != NOT) {
+						yyerror("Logical operator used is not unary");
+					}
+					$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(3, "!(", $3->firstArgBoolStr, ")"));
+				}
+		| '(' LOG_OP IDENTIFIER ')'
+				{
+					if(!(variableInCurrentFunction($3))) { // && NOT GLOBAL VAR
+						return NOT_FOUND;
+					}
+					if($2 != NOT) {
+						yyerror("Logical operator used is not unary");
+					}
+					$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(3, "!", $3, "->b"));
+				}
 		;
 
 FunctionCall

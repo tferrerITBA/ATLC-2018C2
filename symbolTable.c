@@ -129,3 +129,11 @@ void addNewVariable(char * varName) {
 	f->varLocal[f->variableIndex++]->name = varName;
 	return;
 }
+
+char * strFromIntLogOp(logicalOp op) {
+	if(op == AND) {
+		return " && ";
+	} else if(op == OR) {
+		return " || ";
+	}
+}
