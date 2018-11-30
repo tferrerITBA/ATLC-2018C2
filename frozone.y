@@ -23,6 +23,7 @@
 	char * strcatN(int num, ...);
 	char * repeatStr(char * str, int count, int final);
 	char * strFromIntArithmOp(arithmOp op);
+	char * strFromIntRelOp(relationalOp op);
 	int string_ends_with(const char * str, const char * suffix);
 	void freeResources();
 
@@ -216,15 +217,15 @@ VarDeclaration
 						}
 					} else {
 						if($3->type == IVAL) {
-							$$ = addNode(strcatN(4, $1, " = varWithInt(", $3->firstArgIntStr, ");\n"));
+							$$ = addNode(strcatN(6, $1, " = varWithInt(", $1, ", ", $3->firstArgIntStr, ");\n"));
 						} else if($3->type == DVAL) {
-							$$ = addNode(strcatN(4, $1, " = varWithDbl(", $3->firstArgDblStr, ");\n"));
+							$$ = addNode(strcatN(6, $1, " = varWithDbl(", $1, ", ", $3->firstArgDblStr, ");\n"));
 						} else if($3->type == SVAL) {
-							$$ = addNode(strcatN(4, $1, " = varWithStr(", $3->firstArgStrStr, ");\n"));
+							$$ = addNode(strcatN(6, $1, " = varWithStr(", $1, ", ", $3->firstArgStrStr, ");\n"));
 						} else if($3->type == BVAL) {
-							$$ = addNode(strcatN(4, $1, " = varWithBool(", $3->firstArgBoolStr, ");\n"));
+							$$ = addNode(strcatN(6, $1, " = varWithBool(", $1, ", ", $3->firstArgBoolStr, ");\n"));
 						} else if($3->type == UNKNOWN) {
-							$$ = addNode(strcatN(23, "if(", $3->baseId, "->t == INT) {\n", $1, " = varWithInt(", $3->firstArgIntStr, ");\n} else if(", $3->baseId, "->t == DBL) {\n", $1, " = varWithDbl(", $3->firstArgDblStr, ");\n} else if(", $3->baseId, "->t == STR) {\n", $1, " = varWithStr(", $3->firstArgStrStr, ");\n} else {\n", $1, " = varWithBool(", $3->firstArgBoolStr, ");\n}\n"));
+							$$ = addNode(strcatN(31, "if(", $3->baseId, "->t == INT) {\n", $1, " = varWithInt(", $1, ", ", $3->firstArgIntStr, ");\n} else if(", $3->baseId, "->t == DBL) {\n", $1, " = varWithDbl(", $1, ", ", $3->firstArgDblStr, ");\n} else if(", $3->baseId, "->t == STR) {\n", $1, " = varWithStr(", $1, ", ", $3->firstArgStrStr, ");\n} else {\n", $1, " = varWithBool(", $1, ", ", $3->firstArgBoolStr, ");\n}\n"));
 						}
 					}
 				}
@@ -233,13 +234,16 @@ VarDeclaration
 		;
 
 OnStatement
-		: ON '(' Condition ')' DO '{' FunctionBody '}'
-				{ $$ = addNode(strcatN(4, "if(", /*$3->str,*/ ") {\n", $7->str, "}\n")); }
+		: ON Condition DO '{' FunctionBody '}'
+				{
+					if($2->type == BVAL) {
+						$$ = addNode(strcatN(5, "if(", $2->firstArgBoolStr, ") {\n", $5->str, "}\n")); }
+					}
 		;
 
 CycleStatement
 	: CYCLE '{' FunctionBody '}' ON Condition
-				{ $$ = addNode(strcatN(4, "do {", $3->str, "} while(", /*$7->str,*/ ")\n")); }
+				{ $$ = addNode(strcatN(5, "do {\n", $3->str, "} while(", $6->firstArgBoolStr, ");\n")); }
 	;
 
 ReturnStatement
@@ -302,7 +306,7 @@ Operation
 							return NOT_FOUND;
 						}
 						if($2 == PLUS) {
-							$$ = addOpNode(UNKNOWN, $1, strcatN(4, $1, "->i + ", $3, "->i"), strcatN(4, $1, "->d + ", $3, "->d"), strcatN(5, "strcat(", $1, "->str, ", $3, "->str)"), strcatN(2, $1, "->b"));
+							$$ = addOpNode(UNKNOWN, $1, strcatN(4, $1, "->i + ", $3, "->i"), strcatN(4, $1, "->d + ", $3, "->d"), strcatN(5, "strcatN(2, ", $1, "->str, ", $3, "->str)"), strcatN(2, $1, "->b"));
 						} else {
 							$$ = addOpNode(UNKNOWN, $1, strcatN(6, $1, "->i ", strFromIntArithmOp($2), " ", $3, "->i"), strcatN(6, $1, "->d ", strFromIntArithmOp($2), " ", $3, "->d"), strcatN(2, $1, "->str"), strcatN(2, $1, "->b"));
 						}
@@ -314,13 +318,13 @@ Operation
 						}
 						if($3->n == IVAL || $3->n == DVAL) {
 							if($2 == PLUS) {
-								$$ = addOpNode(UNKNOWN, $1, strcatN(3, $1, "->i + ", $3->str), strcatN(3, $1, "->d + ", $3->str), strcatN(5, "strcat(", $1, "->str, \"", $3->str, "\")"), strcatN(2, $1, "->b"));
+								$$ = addOpNode(UNKNOWN, $1, strcatN(3, $1, "->i + ", $3->str), strcatN(3, $1, "->d + ", $3->str), strcatN(5, "strcatN(2, ", $1, "->str, \"", $3->str, "\")"), strcatN(2, $1, "->b"));
 							} else {
 								$$ = addOpNode(UNKNOWN, $1, strcatN(5, $1, "->i ", strFromIntArithmOp($2), " ", $3->str), strcatN(5, $1, "->d ", strFromIntArithmOp($2), " ", $3->str), strcatN(2, $1, "->str"), strcatN(2, $1, "->b"));
 							}
 						} else if($3->n == SVAL) {
 							if($2 == PLUS) {
-								$$ = addOpNode(UNKNOWN, $1, strcatN(2, $1, "->i"), strcatN(2, $1, "->d"), strcatN(5, "strcat(", $1, "->str, ", $3->str, ")"), strcatN(2, $1, "->b"));
+								$$ = addOpNode(UNKNOWN, $1, strcatN(2, $1, "->i"), strcatN(2, $1, "->d"), strcatN(5, "strcatN(2, ", $1, "->str, ", $3->str, ")"), strcatN(2, $1, "->b"));
 							} else {
 								$$ = addOpNode(UNKNOWN, $1, strcatN(2, $1, "->i"), strcatN(2, $1, "->d"), strcatN(2, $1, "->str"), strcatN(2, $1, "->b"));
 							}
@@ -441,70 +445,79 @@ Literal
 		;
 
 Condition
-		: /*'(' IDENTIFIER REL_OP IDENTIFIER ')'
+		: '(' IDENTIFIER REL_OP IDENTIFIER ')'
 				{
-					if(!(variableInCurrentFunction($1) && variableInCurrentFunction($3))) { // && NOT GLOBAL VAR
+					if(!(variableInCurrentFunction($2) && variableInCurrentFunction($4))) { // && NOT GLOBAL VAR
 						return NOT_FOUND;
 					}
-					if($2 == EQ) {
-						$$ = addOpNode(UNKNOWN, $1, strcatN(5, "(", $1, "->i == ", $3, "->i)"), strcatN(7, "(fabs(", $1, "->d - ", $3, "->d) < ", EPSILON, ")"), strcatN(5, "(strcmp(", $1, "->str, ", $3, "->str) == 0)"), strcatN(5, "(", $1, "->b == ", $3, "->b)"));
+					if($3 == EQ) {
+						$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(6, "fabs(", $2, "->d - ", $4, "->d) < ", EPSILON));
+					} else if($3 == NE) {
+						$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(6, "fabs(", $2, "->d - ", $4, "->d) > ", EPSILON));
 					} else {
-
+						$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(5, $2, "->d", strFromIntRelOp($3), $4, "->d"));
 					}
 				}
 		| '(' IDENTIFIER REL_OP Literal ')'
 				{
-					if(!(variableInCurrentFunction($1))) { // && NOT GLOBAL VAR
+					if(!(variableInCurrentFunction($2))) { // && NOT GLOBAL VAR
 						return NOT_FOUND;
 					}
-					if($3->n == IVAL) {
-						if($2 == EQ) {
-							$$ = addOpNode(IVAL, $1, strcatN(5, "(", $1, "->i == ", $3->str, ")"), NULL, NULL, NULL);
+					if($4->n == IVAL) {
+						$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(4, $2, "->i", strFromIntRelOp($3), $4->str));
+					} else if($4->n == DVAL) {
+						if($3 == EQ) {
+							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(6, "fabs(", $2, "->d, ", $4->str, ") < ", EPSILON));
+						} else if($3 == NE) {
+							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(6, "fabs(", $2, "->d, ", $4->str, ") > ", EPSILON));
+						} else if($3 == LT || $3 == GT) {
+							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(4, $2, "->d", strFromIntRelOp($3), $4->str));
 						}
-					} else if($3->n == DVAL) {
-						if($2 == EQ) {
-							$$ = addOpNode(DVAL, $1, NULL, strcatN(7, "(fabs(", $1, "->d, ", $3->str, ") < ", EPSILON, ")"), NULL, NULL);
-						}
-					} else if($3->n == SVAL) {
-						if($2 == EQ) {
-							$$ = addOpNode(SVAL, $1, NULL, NULL, strcatN(5, "(strcmp(", $1, "->str, \"", $3->str, "\") == 0)"), NULL);
-						}
-					} else if($3->n == BVAL) {
-						if($2 == EQ) {
-							$$ = addOpNode(BVAL, $1, NULL, NULL, NULL, strcatN(5, "(", $1, "->b == ", $3->str, ")"));
-						}
+					} else if($4->n == SVAL) {
+						$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(7, "strcmp(", $2, "->str, ", $4->str, ")", strFromIntRelOp($3), "0"));
+					} else if($4->n == BVAL) {
+						$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(4, $2, "->b", strFromIntRelOp($3), $4->str));
 					}
 				}
 		| '(' Literal REL_OP IDENTIFIER ')'
 				{
-					if(!(variableInCurrentFunction($3))) { // && NOT GLOBAL VAR
+					if(!(variableInCurrentFunction($4))) { // && NOT GLOBAL VAR
 						return NOT_FOUND;
 					}
-					if($1->n == IVAL) {
-						if($2 == EQ) {
-							$$ = addOpNode(IVAL, NULL, strcatN(5, "(", $1->str, " == ", $3, "->i)"), NULL, NULL, NULL);
+					if($2->n == IVAL) {
+						$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(4, $2->str, strFromIntRelOp($3), $4, "->i"));
+					} else if($2->n == DVAL) {
+						if($3 == EQ) {
+							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(6, "fabs(", $2->str, ", ", $4, "->d) < ", EPSILON));
+						} else if($3 == NE) {
+							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(6, "fabs(", $2->str, ", ", $4, "->d) > ", EPSILON));
+						} else if($3 == LT || $3 == GT) {
+							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(4, $2->str, strFromIntRelOp($3), $4, "->d"));
 						}
-					} else if($1->n == DVAL) {
-						if($2 == EQ) {
-							$$ = addOpNode(DVAL, NULL, NULL, strcatN(7, "(fabs(", $1->str, ", ", $3, "->d) < ", EPSILON, ")"), NULL, NULL);
-						}
-					} else if($1->n == SVAL) {
-						if($2 == EQ) {
-							$$ = addOpNode(SVAL, NULL, NULL, NULL, strcatN(5, "(strcmp(\"", $1->str, "\", ", $3, "->str) == 0)"), NULL);
-						}
-					} else if($1->n == BVAL) {
-						if($2 == EQ) {
-							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(5, "(", $1->str, " == ", $3, "->b)"));
-						}
+					} else if($2->n == SVAL) {
+						$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(7, "strcmp(", $2->str, ", ", $4, "->str)", strFromIntRelOp($3), "0"));
+					} else if($2->n == BVAL) {
+						$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(4, $2->str, strFromIntRelOp($3), $4, "->b"));
 					}
 				}
-		| */'(' IDENTIFIER ')'
+		| '(' IDENTIFIER ')'
 				{
-					$$ = addOpNode(BVAL, $2, NULL, NULL, NULL, strcatN(3, "(", $2, "->b)"));
+					if(!(variableInCurrentFunction($2))) { // && NOT GLOBAL VAR
+						return NOT_FOUND;
+					}
+					$$ = addOpNode(BVAL, $2, NULL, NULL, NULL, strcatN(2, $2, "->b"));
 				}
 		| '(' Literal ')'
 				{
-					$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(3, "(", $2->str, ")"));
+					if($2->n == IVAL) {
+						$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(3, "newVarWithInt(", $2->str, ")->b"));
+					} else if($2->n == DVAL) {
+						$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(3, "newVarWithDbl(", $2->str, ")->b"));
+					} else if($2->n == SVAL) {
+						$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(3, "newVarWithStr(", $2->str, ")->b"));
+					} else if($2->n == BVAL) {
+						$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, $2->str);
+					}
 				}
 		;
 
@@ -555,13 +568,13 @@ int main(int argc, char *argv[])
 		FILE *file;
 
 		if (!string_ends_with(argv[1],".f")){
-			fprintf(stderr, "could not Compile a not frozone file %s\n", argv[1]);
+			fprintf(stderr, "Input file must have '.f' extension : %s\n", argv[1]);
 			return 1;
 		}
 
 		file = fopen(argv[1], "r");
 		if(!file) {
-			fprintf(stderr, "could not open %s\n", argv[1]);
+			fprintf(stderr, "Error while opening input file : %s\n", argv[1]);
 			return 1;
 		}
 		yyin = file;
@@ -573,6 +586,7 @@ int main(int argc, char *argv[])
 #include <stdio.h> \n \
 #include <string.h> \n \
 #include <stdarg.h> \n \
+#include \"math.h\" \n \
 \n \
 #define MAX_STR_LENGTH 100 \n \
 #define STR_BLOCK 10 \n \
@@ -806,6 +820,18 @@ char * strFromIntArithmOp(arithmOp op) {
 		return " * ";
 	} else if(op == DIV) {
 		return " / ";
+	}
+}
+
+char * strFromIntRelOp(relationalOp op) {
+	if(op == EQ) {
+		return " == ";
+	} else if(op == LT) {
+		return " < ";
+	} else if(op == GT) {
+		return " > ";
+	} else if(op == NE) {
+		return " != ";
 	}
 }
 
