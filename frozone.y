@@ -6,25 +6,13 @@
 	#include <stdarg.h>
 
 	#define TRUE 1
-  	#define FALSE 0
-	#define MAX_INT_STR_LENGTH 24
-	#define MAX_DBL_STR_LENGTH 24
-	#define STR_BLOCK 10
+  #define FALSE 0
 
 	extern FILE *yyin;
 	extern char * yytext;
 	FILE * fp;
 
 	int yylex();
-
-	Node addNode(char * string);
-	IntNode addIntNode(char * string, int n);
-	OpNode addOpNode(int type, char * baseId, char * intStr, char * dblStr, char * strStr, char * boolStr);
-	char * strcatN(int num, ...);
-	char * repeatStr(char * str, int count, int final);
-	char * strFromIntArithmOp(arithmOp op);
-	int string_ends_with(const char * str, const char * suffix);
-	void freeResources();
 
 	Global gscope;
 %}
@@ -705,131 +693,4 @@ char * strcatN(int num, ...) { \n \
 
     fclose(yyin);
     return 0;
-}
-
-varStatus addVariable(char * varName) {
-	Function func = gscope->functions[gscope->currentFunction];
-	int i;
-	for(i = 0; i < func->variableIndex; i++) {
-		if(strcmp(varName, func->varLocal[i]->name) == 0) {
-			return VAR_MODIFIED;
-		}
-	}
-	if(i >= func->variableIndex) {
-		func->varLocal[func->variableIndex] = malloc(sizeof(VariableCDT));
-		func->varLocal[func->variableIndex++]->name = varName;
-	}
-	return VAR_CREATED;
-}
-
-bool foundVariable(char * varName) {
-	Function func = gscope->functions[gscope->currentFunction];
-	int i;
-	for(i = 0; i < func->variableIndex; i++) {
-		if(strcmp(varName, func->varLocal[i]->name) == 0) {
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
-Node addNode(char * string) {
-	Node newNode = malloc(sizeof(NodeCDT));
-	newNode->str = string;
-	return newNode;
-}
-
-IntNode addIntNode(char * string, int n) {
-	IntNode newNode = malloc(sizeof(IntNodeCDT));
-	newNode->str = string;
-	newNode->n = n;
-	return newNode;
-}
-
-OpNode addOpNode(int type, char * baseId, char * intStr, char * dblStr, char * strStr, char * boolStr) {
-	OpNode newNode = malloc(sizeof(OpNodeCDT));
-	newNode->type = type;
-	newNode->baseId = baseId;
-	newNode->firstArgIntStr = intStr;
-	newNode->firstArgDblStr = dblStr;
-	newNode->firstArgStrStr = strStr;
-	newNode->firstArgBoolStr = boolStr;
-	return newNode;
-}
-
-char * strcatN(int num, ...) {
-	va_list valist;
-	char * ret = NULL;
-	int len = 0;
-	int i;
-
-  	va_start(valist, num);
-  	for(i = 0; i < num; i++) {
-    	char * param = va_arg(valist, char *);
-    	if(param != NULL) {
-      		while(*param != '\0') {
-        		if(len % STR_BLOCK == 0) {
-          			ret = realloc(ret, len + STR_BLOCK);
-        		}
-        		ret[len++] = *param++;
-      		}
-    	}
-  	}
-  	if(len % STR_BLOCK == 0) {
-    	ret = realloc(ret, len + 1);
-  	}
-  	ret[len] = '\0';
-
-  	va_end(valist);
-  	return ret;
-}
-
-char * repeatStr(char * str, int count, int final) {
-	if(count == 0)
-		return NULL;
-	int auxCount = count;
-	char * ret = malloc(strlen(str) * count);
-	while(count > 0) {
-		strcat(ret, str);
-		count--;
-	}
-	ret[strlen(str) * auxCount - final] = '\0';
-	return ret;
-}
-
-char * strFromIntArithmOp(arithmOp op) {
-	if(op == PLUS) {
-		return " + ";
-	} else if(op == MINUS) {
-		return " - ";
-	} else if(op == MULT) {
-		return " * ";
-	} else if(op == DIV) {
-		return " / ";
-	}
-}
-
-void freeResources() {
-	int i;
-    for(i = 0; i < gscope->variableIndex; i++) {
-    	free(gscope->varGlobal[i]);
-    }
-    for(i = 0; i < gscope->functionIndex; i++) {
-    	int j;
-    	for(j = 0; j < gscope->functions[i]->variableIndex; j++) {
-    		free(gscope->functions[i]->varLocal[j]);
-    	}
-    	free(gscope->functions[i]);
-    }
-    free(gscope);
-}
-
-int string_ends_with(const char * str, const char * suffix)
-{
-  int str_len = strlen(str);
-  int suffix_len = strlen(suffix);
-
-  return
-    (str_len >= suffix_len) &&
-    (0 == strcmp(str + (str_len-suffix_len), suffix));
 }
