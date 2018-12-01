@@ -4,7 +4,7 @@ frozone(){
   b = 0
   scan(a, 1)
   on (a lt 0) do {
-    print("El numero ingresado debe ser mayor a 0")
+    print("The input must be an integer greater than 0")
   } else {
     cycle {
       b = b + a
