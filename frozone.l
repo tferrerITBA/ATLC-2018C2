@@ -20,7 +20,7 @@ FunctionDec function[ ]+{Identifier}
 AnyStrChar  [^\\"]
 String      [\"]({Escape}|{AnyStrChar})*[\"]
 Integer     -?{Digit}+
-Double       {Digit}*[\.]{Digit}+
+Double      -?{Digit}*[\.]{Digit}+
 
 BLANK       [ ]
 TAB         [\t]
