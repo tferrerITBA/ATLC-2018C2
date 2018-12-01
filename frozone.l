@@ -19,7 +19,7 @@ Identifier  {Letter}({Letter}|{Digit})*
 FunctionDec function[ ]+{Identifier}
 AnyStrChar  [^\\"]
 String      [\"]({Escape}|{AnyStrChar})*[\"]
-Integer     {Digit}+
+Integer     -?{Digit}+
 Double       {Digit}*[\.]{Digit}+
 
 BLANK       [ ]
