@@ -1,12 +1,11 @@
-f2(1)
-
 frozone () {
-	% "Los comentarios van entre comillas o pueden ser numericos"
+	% "Este es un comentario"
 	a = 3
-	b = 2
-}
-
-function f2(a) {
-	a = 1
-	return a
+	print(a)
+	a = "Esto sigue siendo la var a"
+	print(a)
+	a = false
+	print(a)
+	a = 2.5
+	print(a)
 }

@@ -799,7 +799,7 @@ char * strcatN(int num, ...) { \n \
     	}
     }
 
-    // freeResources();
+    freeResources();
 
     if(argsFound) {
     	fclose(in);
