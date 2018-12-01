@@ -3,7 +3,7 @@
 #define MAX_LOCAL_VARIABLES 1113
 #define MAX_FUNCTION_NAME 50
 #define FROZONE "frozone"
-#define EPSILON "0.00001"
+#define EPSILON "0.000001"
 
 #define MAX_INT_STR_LENGTH 24
 #define MAX_DBL_STR_LENGTH 24
@@ -71,6 +71,13 @@ typedef struct GlobalCDT {
 
 void yyerror(const char *s);
 
+Node addNode(char * string);
+IntNode addIntNode(char * string, int n);
+OpNode addOpNode(int type, char * baseId, char * intStr, char * dblStr, char * strStr, char * boolStr);
+char * strcatN(int num, ...);
+char * repeatStr(char * str, int count, int final);
+void freeResources();
+
 int insertFunction(char * name, int argc);
 char * getFunctionName(char * str);
 int foundFunction(char * name);
@@ -80,15 +87,7 @@ int ArgcMatchesPrototype(char * name, int argc);
 Function getFunction(char * name);
 int variableInCurrentFunction(char * name);
 void addNewVariable(char * name);
+
 char * strFromIntArithmOp(arithmOp op);
 char * strFromIntRelOp(relationalOp op);
 char * strFromIntLogOp(logicalOp op);
-
-
-Node addNode(char * string);
-IntNode addIntNode(char * string, int n);
-OpNode addOpNode(int type, char * baseId, char * intStr, char * dblStr, char * strStr, char * boolStr);
-char * strcatN(int num, ...);
-char * repeatStr(char * str, int count, int final);
-int string_ends_with(const char * str, const char * suffix);
-void freeResources();

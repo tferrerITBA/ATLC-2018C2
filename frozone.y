@@ -5,16 +5,16 @@
 	#include "symbolTable.h"
 	#include <stdarg.h>
 
-	#define TRUE 1
-  	#define FALSE 0
-
-	extern FILE *yyin;
-	extern char * yytext;
-	FILE * fp;
-
 	int yylex();
 
+	extern int yylineno;
+
 	Global gscope;
+
+	extern FILE * yyin;
+
+	FILE * in;
+	FILE * out;
 %}
 
 %union {
@@ -43,7 +43,7 @@
 %token <sval> RETURN
 %token <sval> PRINT
 
-%type<node> Program HeaderSection FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration FunctionCall OnStatement CycleStatement ReturnStatement PrintStatement
+%type<node> Program FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration FunctionCall OnStatement CycleStatement ReturnStatement PrintStatement
 %type<intnode> FunctionArguments NonEmptyFunctionArguments FunctionCallArgs NonEmptyFunctionCallArgs Literal
 %type<opnode> Operation Condition
 
@@ -52,21 +52,14 @@
 %%
 
 Program
-		: HeaderSection GlobalFunctionList
-				{ $$ = addNode(strcatN(2, $1->str, $2->str)); fprintf(fp, "%s", $$->str); } // METER EN EL .H
-		;
-
-HeaderSection
-		: FunctionPrototypes
-				{
-					$$ = addNode(strcatN(1, $1->str));
-				}
+		: FunctionPrototypes GlobalFunctionList
+				{ $$ = addNode(strcatN(2, $1->str, $2->str)); fprintf(out, "%s", $$->str); }
 		;
 
 FunctionPrototypes
 		: FunctionPrototypes FunctionPrototype
 				{
-					$$ = addNode(strcatN(2, $1->str, $2->str));
+					$$ = addNode(strcatN(3, $1->str, $2->str, "\n"));
 				}
 		|		{ $$ = addNode(""); }
 		;
@@ -78,7 +71,7 @@ FunctionPrototype
 						yyerror("Number of arguments must be integer");
 					}
 					insertFunction($1, atoi($3->str));
-					$$ = addNode(strcatN(5, "Var ", $1, "(", repeatStr("Var, ", atoi($3->str), 2), ");\n"));//FALTAN ARGS
+					$$ = addNode(strcatN(5, "Var ", $1, "(", repeatStr("Var, ", atoi($3->str), 2), ");\n"));
 				}
 		;
 
@@ -141,7 +134,7 @@ FunctionBody
 		: FunctionBody Statement
 				{ $$ = addNode(strcatN(2, $1->str, $2->str)); }
 		|
-				{ $$ = addNode(""); } //CHEQUEAR
+				{ $$ = addNode(""); }
 		;
 
 Statement
@@ -155,6 +148,8 @@ Statement
 				{ $$ = addNode($1->str); }
 		| PrintStatement
 				{ $$ = addNode($1->str); }
+		| CommentStatement
+				{ $$ = addNode(""); }
 		;
 
 VarDeclaration
@@ -275,7 +270,7 @@ ReturnStatement
 PrintStatement
 		: PRINT '(' IDENTIFIER ')'
 				{
-					if(!variableInCurrentFunction($3)) { // && NOT GLOBAL VAR
+					if(!variableInCurrentFunction($3)) {
 						return NOT_FOUND;
 					}
 					$$ = addNode(strcatN(17, "if(", $3, "->t == INT) {\nprintf(\"%d\\n\", ", $3, "->i);\n} else if(", $3, "->t == DBL) {\nprintf(\"%g\\n\", ", $3, "->d);\n} else if(", $3, "->t == STR) {\nprintf(\"%s\\n\", ", $3, "->str);\n} else if(", $3, "->t == BOOL) {\nprintf(\"%s\\n\", (", $3, "->b)? \"true\" : \"false\");\n}\n"));
@@ -294,10 +289,14 @@ PrintStatement
 				}
 		;
 
+CommentStatement
+		: '%' Literal {}
+		;
+
 Operation
 		: IDENTIFIER ARITHM_OP IDENTIFIER
 					{
-						if(!(variableInCurrentFunction($1) && variableInCurrentFunction($3))) { // && NOT GLOBAL VAR
+						if(!(variableInCurrentFunction($1) && variableInCurrentFunction($3))) {
 							return NOT_FOUND;
 						}
 						if($2 == PLUS) {
@@ -308,7 +307,7 @@ Operation
 					}
 		| IDENTIFIER ARITHM_OP Literal
 					{
-						if(!variableInCurrentFunction($1)) { // && NOT GLOBAL VAR
+						if(!variableInCurrentFunction($1)) {
 							return NOT_FOUND;
 						}
 						if($3->n == IVAL || $3->n == DVAL) {
@@ -329,7 +328,7 @@ Operation
 					}
 		| Literal ARITHM_OP IDENTIFIER
 					{
-						if(!variableInCurrentFunction($3)) { // && NOT GLOBAL VAR
+						if(!variableInCurrentFunction($3)) {
 							return NOT_FOUND;
 						}
 						if($2 == PLUS) {
@@ -442,7 +441,7 @@ Literal
 Condition
 		: '(' IDENTIFIER REL_OP IDENTIFIER ')'
 				{
-					if(!(variableInCurrentFunction($2) && variableInCurrentFunction($4))) { // && NOT GLOBAL VAR
+					if(!(variableInCurrentFunction($2) && variableInCurrentFunction($4))) {
 						return NOT_FOUND;
 					}
 					if($3 == EQ) {
@@ -455,7 +454,7 @@ Condition
 				}
 		| '(' IDENTIFIER REL_OP Literal ')'
 				{
-					if(!(variableInCurrentFunction($2))) { // && NOT GLOBAL VAR
+					if(!(variableInCurrentFunction($2))) {
 						return NOT_FOUND;
 					}
 					if($4->n == IVAL) {
@@ -476,7 +475,7 @@ Condition
 				}
 		| '(' Literal REL_OP IDENTIFIER ')'
 				{
-					if(!(variableInCurrentFunction($4))) { // && NOT GLOBAL VAR
+					if(!(variableInCurrentFunction($4))) {
 						return NOT_FOUND;
 					}
 					if($2->n == IVAL) {
@@ -497,7 +496,7 @@ Condition
 				}
 		| '(' IDENTIFIER ')'
 				{
-					if(!(variableInCurrentFunction($2))) { // && NOT GLOBAL VAR
+					if(!(variableInCurrentFunction($2))) {
 						return NOT_FOUND;
 					}
 					$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(2, $2, "->b"));
@@ -523,7 +522,7 @@ Condition
 				}
 		| '(' Condition LOG_OP IDENTIFIER ')'
 				{
-					if(!(variableInCurrentFunction($4))) { // && NOT GLOBAL VAR
+					if(!(variableInCurrentFunction($4))) {
 						return NOT_FOUND;
 					}
 					if($3 == NOT) {
@@ -533,7 +532,7 @@ Condition
 				}
 		| '(' IDENTIFIER LOG_OP Condition ')'
 				{
-					if(!(variableInCurrentFunction($2))) { // && NOT GLOBAL VAR
+					if(!(variableInCurrentFunction($2))) {
 						return NOT_FOUND;
 					}
 					if($3 == NOT) {
@@ -543,7 +542,7 @@ Condition
 				}
 		| '(' IDENTIFIER LOG_OP IDENTIFIER ')'
 				{
-					if(!(variableInCurrentFunction($2) && variableInCurrentFunction($4))) { // && NOT GLOBAL VAR
+					if(!(variableInCurrentFunction($2) && variableInCurrentFunction($4))) {
 						return NOT_FOUND;
 					}
 					if($3 == NOT) {
@@ -560,7 +559,7 @@ Condition
 				}
 		| '(' LOG_OP IDENTIFIER ')'
 				{
-					if(!(variableInCurrentFunction($3))) { // && NOT GLOBAL VAR
+					if(!(variableInCurrentFunction($3))) {
 						return NOT_FOUND;
 					}
 					if($2 != NOT) {
@@ -595,7 +594,7 @@ FunctionCallArgs
 NonEmptyFunctionCallArgs
 		: NonEmptyFunctionCallArgs ',' IDENTIFIER
 				{
-					if(!variableInCurrentFunction($3)) { // && NOT GLOBAL VAR
+					if(!variableInCurrentFunction($3)) {
 						return NOT_FOUND;
 					}
 					$$ = addIntNode(strcatN(3, $1->str, ", ", $3), $1->n + 1);
@@ -613,36 +612,37 @@ NonEmptyFunctionCallArgs
 
 int main(int argc, char *argv[])
 {
-	if(argc > 1) {
-		FILE *file;
+	in = stdin;
+	out = stdout;
 
-		if (!string_ends_with(argv[1],".f")){
-			fprintf(stderr, "Input file must have '.f' extension : %s\n", argv[1]);
+	bool argsFound = argc >= 3;
+	
+	if(argsFound) {
+		in = fopen(argv[1], "r");
+		out = fopen(argv[2], "w+");
+		if(!in) {
+			fprintf(stderr, "Could not open %s\n", argv[1]);
 			return 1;
 		}
-
-		file = fopen(argv[1], "r");
-		if(!file) {
-			fprintf(stderr, "Error while opening input file : %s\n", argv[1]);
-			return 1;
+		if(!out) {
+			fprintf(stderr, "Could not open %s\n", argv[2]);
+			return 2;
 		}
-		yyin = file;
+		yyin = in;
 	}
 
-	fp = fopen("test.c", "w+"); 			//Usar argv[1]
-
-	fprintf(fp, "#include <stdlib.h> \n \
-#include <stdio.h> \n \
-#include <string.h> \n \
-#include <stdarg.h> \n \
-#include \"math.h\" \n \
+	fprintf(out, "#include <stdlib.h> \n \
+#include <stdio.h>\n \
+#include <string.h>\n \
+#include <stdarg.h>\n \
+#include \"math.h\"\n \
 \n \
-#define MAX_STR_LENGTH 100 \n \
-#define STR_BLOCK 10 \n \
+#define MAX_STR_LENGTH 100\n \
+#define STR_BLOCK 10\n \
 \n \
-typedef enum { INT, DBL, STR, BOOL } type; \n \
-typedef enum { FALSE = 0 , TRUE } bool;\n\
-typedef struct VarCDT * Var; \n \
+typedef enum { INT, DBL, STR, BOOL } type;\n \
+typedef enum { FALSE = 0 , TRUE } bool;\n \
+typedef struct VarCDT * Var;\n \
 typedef struct VarCDT {\n \
 	int i;\n \
 	double d;\n \
@@ -757,15 +757,27 @@ char * strcatN(int num, ...) { \n \
 	gscope->functionIndex = 1;
 	gscope->mainFound = FALSE;
 
-    if(!yyparse())
-        printf("\nParsing complete\n");
-    else
-        printf("\nParsing failed\n");
+    yyparse();
+
+    int i;
+    for(i = 1; i < gscope->functionIndex; i++) {
+    	if(gscope->functions[i]->defined == FALSE) {
+    		yyerror(strcatN(3, "Function ", gscope->functions[i]->name, " has prototype but is missing definition"));
+    	}
+    }
 
     freeResources();
 
-	fclose(fp);
+    if(argsFound) {
+    	fclose(in);
+    	fclose(out);
+    }
 
-    fclose(yyin);
     return 0;
+}
+
+void yyerror(const char * s)
+{
+	fprintf(stderr, "*** Error: %s : line %d\n", s, yylineno);
+	exit(1);
 }
