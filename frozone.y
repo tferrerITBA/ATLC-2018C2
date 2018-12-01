@@ -762,7 +762,7 @@ char * strcatN(int num, ...) { \n \
     else
         printf("\nParsing failed\n");
 
-    //freeResources();
+    freeResources();
 
 	fclose(fp);
 
