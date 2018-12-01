@@ -68,3 +68,5 @@ Mkfile.old
 dkms.conf
 
 aux
+test
+test*.c

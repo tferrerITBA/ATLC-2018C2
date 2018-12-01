@@ -51,6 +51,7 @@ NEW_LINE    [\n]
 "/"             {   yylval.aop = DIV; return ARITHM_OP;     }
 "return"        {   yylval.sval = strdup(yytext); return RETURN;    }
 "print"         {   yylval.sval = strdup(yytext); return PRINT;     }
+"scan"          {   return SCAN;    }
 
 {Double}         {
                     yylval.sval = strdup(yytext);;

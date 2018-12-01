@@ -31,7 +31,7 @@
 
 %token <sval> MAIN_ID
 %token <sval> FN_ID
-%token ON DO CYCLE
+%token ON DO CYCLE SCAN
 %token <sval> IDENTIFIER
 %token <sval> INT_LIT
 %token <sval> DBL_LIT
@@ -286,6 +286,13 @@ PrintStatement
 					} else if($3->n == BVAL) {
 						$$ = addNode(strcatN(3, "printf(\"%s\\n\", (", $3->str, ")? \"true\" : \"false\");\n"));
 					}
+				}
+		| SCAN '(' IDENTIFIER ')'
+				{
+					if(!variableInCurrentFunction($3)) {
+						return NOT_FOUND;
+					}
+					$$ = addNode(strcatN(7, "scanf(\"%s\", ", $3, "->str);\n varWithStr(", $3, ", ", $3, "->str);\n"));
 				}
 		;
 
@@ -616,7 +623,7 @@ int main(int argc, char *argv[])
 	out = stdout;
 
 	bool argsFound = argc >= 3;
-	
+
 	if(argsFound) {
 		in = fopen(argv[1], "r");
 		out = fopen(argv[2], "w+");
@@ -766,7 +773,7 @@ char * strcatN(int num, ...) { \n \
     	}
     }
 
-    freeResources();
+    // freeResources();
 
     if(argsFound) {
     	fclose(in);
