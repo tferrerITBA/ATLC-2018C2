@@ -10,6 +10,11 @@
 	extern int yylineno;
 
 	Global gscope;
+
+	extern FILE * yyin;
+
+	FILE * in;
+	FILE * out;
 %}
 
 %union {
@@ -48,7 +53,7 @@
 
 Program
 		: FunctionPrototypes GlobalFunctionList
-				{ $$ = addNode(strcatN(2, $1->str, $2->str)); printf("%s", $$->str); }
+				{ $$ = addNode(strcatN(2, $1->str, $2->str)); fprintf(out, "%s", $$->str); }
 		;
 
 FunctionPrototypes
@@ -607,8 +612,26 @@ NonEmptyFunctionCallArgs
 
 int main(int argc, char *argv[])
 {
+	in = stdin;
+	out = stdout;
 
-	printf("#include <stdlib.h> \n \
+	bool argsFound = argc >= 3;
+	
+	if(argsFound) {
+		in = fopen(argv[1], "r");
+		out = fopen(argv[2], "w+");
+		if(!in) {
+			fprintf(stderr, "Could not open %s\n", argv[1]);
+			return 1;
+		}
+		if(!out) {
+			fprintf(stderr, "Could not open %s\n", argv[2]);
+			return 2;
+		}
+		yyin = in;
+	}
+
+	fprintf(out, "#include <stdlib.h> \n \
 #include <stdio.h>\n \
 #include <string.h>\n \
 #include <stdarg.h>\n \
@@ -744,6 +767,11 @@ char * strcatN(int num, ...) { \n \
     }
 
     //freeResources();
+
+    if(argsFound) {
+    	fclose(in);
+    	fclose(out);
+    }
 
     return 0;
 }
