@@ -1,7 +1,7 @@
 CC=gcc
 YFLAGS=-d
 FROZONEC=./frozone
-FROZONEFLAGS=-o $(FROZONEC) -ly -ll
+FROZONEFLAGS=-o $(FROZONEC) -ly -lfl
 SRC=test1.f
 TGT=test1
 TGTFLAGS=-o $(TGT)
