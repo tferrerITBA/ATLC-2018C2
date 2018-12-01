@@ -5,7 +5,7 @@ frozone(){
 	y = 0
 	y = foo(x)
 	print(y)
-	x = -10
+	x = -10 + 5
 	y = foo(x)
 	print(y)
 }
