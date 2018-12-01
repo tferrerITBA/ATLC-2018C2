@@ -294,13 +294,6 @@ PrintStatement
 						$$ = addNode(strcatN(3, "printf(\"%s\\n\", (", $3->str, ")? \"true\" : \"false\");\n"));
 					}
 				}
-		| SCAN '(' IDENTIFIER ')'
-				{
-					if(!variableInCurrentFunction($3)) {
-						return NOT_FOUND;
-					}
-					$$ = addNode(strcatN(7, "scanf(\"%s\", ", $3, "->str);\n varWithStr(", $3, ", ", $3, "->str);\n"));
-				}
 		;
 
 ScanStatement
@@ -494,9 +487,9 @@ Condition
 						$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(4, $2, "->i", strFromIntRelOp($3), $4->str));
 					} else if($4->n == DVAL) {
 						if($3 == EQ) {
-							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(6, "fabs(", $2, "->d, ", $4->str, ") < ", EPSILON));
+							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(6, "fabs(", $2, "->d - ", $4->str, ") < ", EPSILON));
 						} else if($3 == NE) {
-							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(6, "fabs(", $2, "->d, ", $4->str, ") > ", EPSILON));
+							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(6, "fabs(", $2, "->d - ", $4->str, ") > ", EPSILON));
 						} else if($3 == LT || $3 == GT) {
 							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(4, $2, "->d", strFromIntRelOp($3), $4->str));
 						}
@@ -515,9 +508,9 @@ Condition
 						$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(4, $2->str, strFromIntRelOp($3), $4, "->i"));
 					} else if($2->n == DVAL) {
 						if($3 == EQ) {
-							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(6, "fabs(", $2->str, ", ", $4, "->d) < ", EPSILON));
+							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(6, "fabs(", $2->str, "- ", $4, "->d) < ", EPSILON));
 						} else if($3 == NE) {
-							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(6, "fabs(", $2->str, ", ", $4, "->d) > ", EPSILON));
+							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(6, "fabs(", $2->str, "- ", $4, "->d) > ", EPSILON));
 						} else if($3 == LT || $3 == GT) {
 							$$ = addOpNode(BVAL, NULL, NULL, NULL, NULL, strcatN(4, $2->str, strFromIntRelOp($3), $4, "->d"));
 						}
