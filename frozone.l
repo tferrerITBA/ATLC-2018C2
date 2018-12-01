@@ -36,6 +36,7 @@ NEW_LINE    [\n]
 "on"            {   return ON;      }
 "do"            {   return DO;      }
 "cycle"         {   return CYCLE;   }
+"else"          {   return ELSE;    }
 "eq"            {   yylval.rop = EQ; return REL_OP; }
 "lt"            {   yylval.rop = LT; return REL_OP; }
 "gt"            {   yylval.rop = GT; return REL_OP; }

@@ -31,7 +31,7 @@
 
 %token <sval> MAIN_ID
 %token <sval> FN_ID
-%token ON DO CYCLE SCAN
+%token ON DO CYCLE SCAN ELSE
 %token <sval> IDENTIFIER
 %token <sval> INT_LIT
 %token <sval> DBL_LIT
@@ -43,7 +43,7 @@
 %token <sval> RETURN
 %token <sval> PRINT
 
-%type<node> Program FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration FunctionCall OnStatement CycleStatement ReturnStatement PrintStatement
+%type<node> Program FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration FunctionCall OnStatement CycleStatement ReturnStatement PrintStatement ScanStatement
 %type<intnode> FunctionArguments NonEmptyFunctionArguments FunctionCallArgs NonEmptyFunctionCallArgs Literal
 %type<opnode> Operation Condition
 
@@ -148,6 +148,8 @@ Statement
 				{ $$ = addNode($1->str); }
 		| PrintStatement
 				{ $$ = addNode($1->str); }
+		| ScanStatement
+				{ $$ = addNode($1->str); }
 		| CommentStatement
 				{ $$ = addNode(""); }
 		;
@@ -229,6 +231,11 @@ OnStatement
 					if($2->type == BVAL) {
 						$$ = addNode(strcatN(5, "if(", $2->firstArgBoolStr, ") {\n", $5->str, "}\n")); }
 					}
+		| ON Condition DO '{' FunctionBody '}' ELSE '{' FunctionBody '}'
+				{
+					if($2->type == BVAL) {
+						$$ = addNode(strcatN(7, "if(", $2->firstArgBoolStr, ") {\n", $5->str, "} else {\n", $9->str, "}\n")); }
+					}
 		;
 
 CycleStatement
@@ -293,6 +300,22 @@ PrintStatement
 						return NOT_FOUND;
 					}
 					$$ = addNode(strcatN(7, "scanf(\"%s\", ", $3, "->str);\n varWithStr(", $3, ", ", $3, "->str);\n"));
+				}
+		;
+
+ScanStatement
+		: SCAN '(' IDENTIFIER ',' Literal ')'
+				{
+					if(!variableInCurrentFunction($3)) {
+						return NOT_FOUND;
+					}
+					if($5->n == IVAL) {
+						$$ = addNode(strcatN(7, "scanf(\"%d\", &", $3, "->i);\n varWithInt(", $3, ", ", $3, "->i);\n"));
+					} else if($5->n == SVAL) {
+						$$ = addNode(strcatN(7, "scanf(\"%s\", ", $3, "->str);\n varWithStr(", $3, ", ", $3, "->str);\n"));
+					} else if($5->n == BVAL) {
+						$$ = addNode(strcatN(7, "scanf(\"%s\", ", $3, "->str);\n varWithBool(", $3, ", ", $3, "->str == \"true\" ? TRUE : FALSE);\n"));
+					}
 				}
 		;
 
