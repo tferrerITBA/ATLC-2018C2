@@ -303,9 +303,8 @@ ScanStatement
 						return NOT_FOUND;
 					}
 					if($5->n == DVAL) {
-						yyerror("We do not allow floating point scans");
-					}
-					if($5->n == IVAL) {
+						$$ = addNode(strcatN(7, "scanf(\"%lf\", &", $3, "->d);\n varWithDbl(", $3, ", ", $3, "->d);\n"));
+					} else if($5->n == IVAL) {
 						$$ = addNode(strcatN(7, "scanf(\"%d\", &", $3, "->i);\n varWithInt(", $3, ", ", $3, "->i);\n"));
 					} else if($5->n == SVAL) {
 						$$ = addNode(strcatN(7, "scanf(\"%s\", ", $3, "->str);\n varWithStr(", $3, ", ", $3, "->str);\n"));
