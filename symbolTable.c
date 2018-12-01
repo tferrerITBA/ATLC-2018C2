@@ -276,13 +276,3 @@ void freeResources() {
     }
     free(gscope);
 }
-
-int string_ends_with(const char * str, const char * suffix)
-{
-  int str_len = strlen(str);
-  int suffix_len = strlen(suffix);
-
-  return
-    (str_len >= suffix_len) &&
-    (0 == strcmp(str + (str_len-suffix_len), suffix));
-}

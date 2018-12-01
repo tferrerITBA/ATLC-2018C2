@@ -43,7 +43,7 @@
 %token <sval> RETURN
 %token <sval> PRINT
 
-%type<node> Program HeaderSection FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration FunctionCall OnStatement CycleStatement ReturnStatement PrintStatement
+%type<node> Program FunctionPrototypes FunctionPrototype GlobalFunctionList MainFunction FunctionList Function FunctionBody Statement VarDeclaration FunctionCall OnStatement CycleStatement ReturnStatement PrintStatement
 %type<intnode> FunctionArguments NonEmptyFunctionArguments FunctionCallArgs NonEmptyFunctionCallArgs Literal
 %type<opnode> Operation Condition
 
@@ -52,15 +52,8 @@
 %%
 
 Program
-		: HeaderSection GlobalFunctionList
-				{ $$ = addNode(strcatN(2, $1->str, $2->str)); fprintf(fp, "%s", $$->str); } // METER EN EL .H
-		;
-
-HeaderSection
-		: FunctionPrototypes
-				{
-					$$ = addNode(strcatN(1, $1->str));
-				}
+		: FunctionPrototypes GlobalFunctionList
+				{ $$ = addNode(strcatN(2, $1->str, $2->str)); printf("%s", $$->str); }
 		;
 
 FunctionPrototypes
@@ -613,25 +606,8 @@ NonEmptyFunctionCallArgs
 
 int main(int argc, char *argv[])
 {
-	if(argc > 1) {
-		FILE *file;
 
-		if (!string_ends_with(argv[1],".f")){
-			fprintf(stderr, "Input file must have '.f' extension : %s\n", argv[1]);
-			return 1;
-		}
-
-		file = fopen(argv[1], "r");
-		if(!file) {
-			fprintf(stderr, "Error while opening input file : %s\n", argv[1]);
-			return 1;
-		}
-		yyin = file;
-	}
-
-	fp = fopen("test.c", "w+"); 			//Usar argv[1]
-
-	fprintf(fp, "#include <stdlib.h> \n \
+	printf("#include <stdlib.h> \n \
 #include <stdio.h> \n \
 #include <string.h> \n \
 #include <stdarg.h> \n \
@@ -757,15 +733,9 @@ char * strcatN(int num, ...) { \n \
 	gscope->functionIndex = 1;
 	gscope->mainFound = FALSE;
 
-    if(!yyparse())
-        printf("\nParsing complete\n");
-    else
-        printf("\nParsing failed\n");
+    yyparse();
 
     //freeResources();
 
-	fclose(fp);
-
-    fclose(yyin);
     return 0;
 }

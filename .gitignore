@@ -3,9 +3,16 @@ lex.yy.c
 y.tab.h
 y.tab.c
 frozone
-Tests/*
-!Tests/.gitkeep
-test*
+test1.c
+test1
+test2.c
+test2
+test3.c
+test3
+test4.c
+test4
+test5.c
+test5
 
 # Prerequisites
 *.d
