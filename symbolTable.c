@@ -7,7 +7,6 @@
 
 extern FILE *yyin;
 extern char * yytext;
-FILE * fp;
 
 int yylex();
 
@@ -39,11 +38,10 @@ int insertFunction(char * name, int argc) {
 		gscope->currentFunction = 0;
 		return SUCCESS;
 	}
-	//name = getFunctionName(name);
+
 	int i;
 	for(i = 1; i < gscope->functionIndex; i++) {
 		if(strcmp(name, gscope->functions[i]->name) == 0) {
-			//yytext = $1;
 			yyerror("Function already declared");
 			return FUNC_DUP;
 		}
@@ -90,11 +88,6 @@ int foundFunction(char * name) {
 				gscope->currentFunction = i;
 				return SUCCESS;
 			}
-			/*if(strcmp(args, f->args) != 0) {
-				yyerror("Argument count incompatible with prototype declaration");
-				return FUNC_DUP;
-			}*/
-			//return i;
 		}
 	}
 	yyerror("Defined function missing prototype");

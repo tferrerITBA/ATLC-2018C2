@@ -1,7 +1,8 @@
 f2(1)
 
 frozone () {
-	a = false
+	% "Los comentarios van entre comillas o pueden ser numericos"
+	a = 3
 	b = 2
 }
 
