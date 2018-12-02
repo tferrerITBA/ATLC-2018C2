@@ -223,6 +223,17 @@ VarDeclaration
 						$$ = addNode(strcatN(6, $1, " = varWithBool(", $1, ", ", $3->firstArgBoolStr, ");\n"));
 					}
 				}
+		| IDENTIFIER '=' IDENTIFIER
+				{
+					if(!variableInCurrentFunction($3)) {
+						return NOT_FOUND;
+					}
+					if(addVariable($1) == VAR_CREATED) {
+						$$ = addNode(strcatN(27, "Var ", $1, " = newVarWithInt(0);\nif(", $3, "->t == INT) {\nvarWithInt(", $1, ", ", $3, "->i);\n} else if(", $3, "->t == DBL) {\nvarWithDbl(", $1, ", ", $3, "->d);\n} else if(", $3, "->t == STR) {\nvarWithStr(", $1, ", ", $3, "->str);\n} else if(", $3, "->t == BOOL) {\nvarWithBool(", $1, ", ", $3, "->b);\n}\n"));
+					} else {
+						$$ = addNode(strcatN(25, "if(", $3, "->t == INT) {\nvarWithInt(", $1, ", ", $3, "->i);\n} else if(", $3, "->t == DBL) {\nvarWithDbl(", $1, ", ", $3, "->d);\n} else if(", $3, "->t == STR) {\nvarWithStr(", $1, ", ", $3, "->str);\n} else if(", $3, "->t == BOOL) {\nvarWithBool(", $1, ", ", $3, "->b);\n}\n"));
+					}
+				}
 		;
 
 OnStatement

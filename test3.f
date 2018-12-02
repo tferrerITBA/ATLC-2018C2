@@ -12,7 +12,7 @@ frozone() {
 		cycle {
 			scan(y, 1.0)
 			on ((y gt z) or (first eq true)) do {
-				z = y + 0
+				z = y
 			}
 			x = x - 1
 			first = false

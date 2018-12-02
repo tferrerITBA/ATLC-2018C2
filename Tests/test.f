@@ -1,6 +1,6 @@
 
 frozone(){
- a = false
- scan(a)
+ b = true
+ a = b
  print(a)
 }
