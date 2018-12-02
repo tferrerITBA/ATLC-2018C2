@@ -2,11 +2,12 @@ foo(1)
 
 frozone(){
 	x = 5
-	y = 0
-	y = foo(x)
+	y = x + 2.5
+	y = foo(y)
 	print(y)
 	x = -10 + 5
-	y = foo(x)
+	y = x + 2.5
+	y = foo(y)
 	print(y)
 }
 

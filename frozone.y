@@ -199,7 +199,7 @@ VarDeclaration
 						} else if($3->type == BVAL) {
 							$$ = addNode(strcatN(5, "Var ", $1, " = newVarWithBool(", $3->firstArgBoolStr, ");\n"));
 						} else if($3->type == UNKNOWN) {
-							$$ = addNode(strcatN(23, "if(", $3->baseId, "->t == INT) {\nVar ", $1, " = newVarWithInt(", $3->firstArgIntStr, ");\n} else if(", $3->baseId, "->t == DBL) {\nVar ", $1, " = newVarWithDbl(", $3->firstArgDblStr, ");\n} else if(", $3->baseId, "->t == STR) {\nVar ", $1, " = newVarWithStr(", $3->firstArgStrStr, ");\n} else {\nVar ", $1, " = newVarWithBool(", $3->firstArgBoolStr, ");\n}\n"));
+							$$ = addNode(strcatN(25, "Var ", $1, ";\nif(", $3->baseId, "->t == INT) {\n", $1, " = newVarWithInt(", $3->firstArgIntStr, ");\n} else if(", $3->baseId, "->t == DBL) {\n", $1, " = newVarWithDbl(", $3->firstArgDblStr, ");\n} else if(", $3->baseId, "->t == STR) {\n", $1, " = newVarWithStr(", $3->firstArgStrStr, ");\n} else {\n", $1, " = newVarWithBool(", $3->firstArgBoolStr, ");\n}\n"));
 						}
 					} else {
 						if($3->type == IVAL) {
