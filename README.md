@@ -29,3 +29,5 @@ gcc intermediate_code.c -o output_binary
 ```
 
 Note that running `frozone` with one or less arguments will result in the compiler reading from `stdin` and writing to `stdout`.
+
+For more information, please refer to the pdf document located in the repository's root (in spanish).
