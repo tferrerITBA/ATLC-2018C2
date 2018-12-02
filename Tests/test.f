@@ -1,8 +1,6 @@
 
 frozone(){
- a = 2
- print(a)
- b = 5
+ b = true
  a = b
  print(a)
 }
