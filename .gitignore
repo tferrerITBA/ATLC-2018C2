@@ -2,7 +2,6 @@
 lex.yy.c
 y.tab.h
 y.tab.c
-frozone
 test1.c
 test1
 test2.c
