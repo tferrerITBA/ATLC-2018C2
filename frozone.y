@@ -231,7 +231,7 @@ VarDeclaration
 					if(addVariable($1) == VAR_CREATED) {
 						$$ = addNode(strcatN(23, "if(", $3, "->t == INT) {\nVar ", $1, " = newVarWithInt(", $3,"->i);\n} else if(", $3, "->t == DBL) {\nVar ", $1, " = newVarWithDbl(", $3, "->d);\n} else if(", $3, "->t == STR) {\nVar ", $1, " = newVarWithStr(", $3, "->str);\n} else if(", $3, "->t == BOOL) {\nVar ", $1, " = newVarWithBool(", $3, "->b);\n}\n"));
 					} else {
-						$$ = addNode(strcatN(35, "if(", $3, "->t == INT) {\nVar ", $1, " = varWithInt(", $1, ", ", $3, "->i);\n} else if(", $1, ", ", $3, "->t == DBL) {\nVar ", $1, " = varWithDbl(", $1, ", ", $3, "->d);\n} else if(", $3, "->t == STR) {\nVar ", $1, " = varWithStr(", $1, ", ", $3, "->str);\n} else if(", $3, "->t == BOOL) {\nVar ", $1, " = varWithBool(", $1, ", ", $3, "->b);\n}\n"));
+						$$ = addNode(strcatN(33, "if(", $3, "->t == INT) {\nVar ", $1, " = varWithInt(", $1, ", ", $3, "->i);\n} else if(", $3, "->t == DBL) {\nVar ", $1, " = varWithDbl(", $1, ", ", $3, "->d);\n} else if(", $3, "->t == STR) {\nVar ", $1, " = varWithStr(", $1, ", ", $3, "->str);\n} else if(", $3, "->t == BOOL) {\nVar ", $1, " = varWithBool(", $1, ", ", $3, "->b);\n}\n"));
 					}
 				}
 		;
